@@ -91,7 +91,7 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 - QMK / Vial 用のファイルは [qmk_firmware/keyboards/ogm10_jupiter](qmk_firmware/keyboards/ogm10_jupiter) にあります。
 - push するたびに GitHub Actions（`.github/workflows/build.yml`、`target.json`）で `ogm10_jupiter_vial.uf2` がビルドされ、Actions の Artifacts からダウンロードできます。
 - デフォルトキーマップは仮のものです。Vial で自由に変更してください。Vial のアンロックは左右エンコーダーの同時押しです。
-- `keyboard.json` / `vial.json` のキー位置は基板上のスイッチ座標から作っています。左端3段目と最下段中央の2キーが 1.5u、ほかは 1u です。
+- `keyboard.json` / `vial.json` のキー位置は基板上のスイッチ座標をもとにしています。左端3段目と最下段中央の2キーが 1.5u、ほかは 1u です。Vial 上の見やすさのため、左エンコーダーは 0.75u 幅で表示し、2〜4段目を右に 0.25u ずらしています（基板の実配置とは異なります）。
 
 ## Files
 
