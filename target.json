@@ -1,0 +1,11 @@
+{
+    "include": [
+        {
+            "keyboard": "ogm10_jupiter",
+            "keymap": "vial",
+            "target": "uf2",
+            "flags": "",
+            "name": "ogm10_jupiter_vial"
+        }
+    ]
+}
