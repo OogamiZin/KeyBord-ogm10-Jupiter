@@ -20,7 +20,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                    KC_K,            KC_L,        KC_MINUS,         KC_BSPC,
                 KC_LSFT,            KC_Z,            KC_X,            KC_C,
                    KC_V,            KC_B,            KC_N,            KC_M,
-               KC_COMMA,           KC_UP, KC_LEFT_BRACKET,         KC_LCTL,
+               KC_COMMA,           KC_UP, LT(2,KC_LEFT_BRACKET),         KC_LCTL,
                 KC_LGUI,         KC_LALT, LT(1,KC_LANGUAGE_2),        KC_SPACE,
                KC_ENTER, LT(1,KC_LANGUAGE_1),         KC_LEFT,         KC_DOWN,
                KC_RIGHT
@@ -32,23 +32,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
                    KC_4,            KC_5,            KC_6,            KC_7,
                    KC_8,            KC_9,            KC_0,          KC_DEL,
-                KC_TRNS,        KC_EQUAL, KC_INTERNATIONAL_1, KC_RIGHT_BRACKET,
+                KC_TRNS,        KC_EQUAL, KC_INTERNATIONAL_3, KC_RIGHT_BRACKET,
            KC_BACKSLASH,    KC_SEMICOLON,        KC_QUOTE,        KC_SLASH,
                  KC_DOT,         KC_TRNS,         KC_TRNS,  KC_TRANSPARENT,
-                KC_TRNS,         KC_TRNS, LT(3,KC_TRANSPARENT),         KC_TRNS,
-                KC_TRNS, LT(3,KC_TRANSPARENT),         KC_TRNS,         KC_TRNS,
+                KC_TRNS,         KC_TRNS, LT(4,KC_TRANSPARENT),         KC_TRNS,
+                KC_TRNS, LT(4,KC_TRANSPARENT),         KC_TRNS,         KC_TRNS,
                 KC_TRNS
     ),
     [2] = LAYOUT(
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
-                KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
-                KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
+                KC_TRNS,         KC_TRNS,           KC_F6,         KC_TRNS,
+              KC_INSERT,         KC_TRNS,          KC_F12,         KC_TRNS,
                KC_GRAVE,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,  KC_TRANSPARENT,  KC_TRANSPARENT,
-         KC_TRANSPARENT,  KC_TRANSPARENT, (QK_LSFT|KC_INTERNATIONAL_3),          KC_DEL,
+         KC_TRANSPARENT,  KC_TRANSPARENT, (QK_LSFT|KC_INTERNATIONAL_1),          KC_DEL,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,  KC_TRANSPARENT,  KC_TRANSPARENT,
-         KC_TRANSPARENT,      KC_PAGE_UP,         KC_TRNS,         KC_TRNS,
+         KC_TRANSPARENT,      KC_PAGE_UP,         KC_TRNS, KC_LOCKING_CAPS_LOCK,
                 KC_TRNS,         KC_TRNS,  KC_TRANSPARENT,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_HOME,    KC_PAGE_DOWN,
                  KC_END
@@ -59,13 +59,41 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,  KC_TRANSPARENT,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
-                KC_TRNS,         KC_TRNS,         KC_TRNS,   QK_BOOTLOADER,
+                KC_TRNS,         KC_TRNS,         KC_TRNS,  KC_TRANSPARENT,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS,         KC_TRNS,         KC_TRNS,         KC_TRNS,
                 KC_TRNS
+    ),
+    [4] = LAYOUT(
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT
+    ),
+    [5] = LAYOUT(
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,   QK_BOOTLOADER,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT
     )
 };
 
@@ -84,6 +112,14 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
         { KC_TRANSPARENT , KC_TRANSPARENT  }
     },
     [3] = {
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
+    },
+    [4] = {
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
+    },
+    [5] = {
         { KC_TRANSPARENT , KC_TRANSPARENT  },
         { KC_TRANSPARENT , KC_TRANSPARENT  }
     }
