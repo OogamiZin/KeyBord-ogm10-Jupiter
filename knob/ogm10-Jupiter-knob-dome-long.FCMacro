@@ -1,0 +1,451 @@
+# -*- coding: utf-8 -*-
+# ロータリーエンコーダー/ボリューム用ノブ（Dカット軸 Ø6mm、Dカット部が2.5mm長いタイプ用）
+#  側面: 先端カットのアヤメローレット（テーパー付き） / 天面: 平らな縁 + ドーム
+# FreeCADで「マクロ実行」すると、新しいドキュメントにノブが作られます。
+# 原点 = ノブの底面（開いている側）の中心。単位 mm
+
+import math
+import FreeCAD as App
+import Mesh
+
+P = dict(
+    OUTER_D      = 15.0,   # 底での外径（13mm から 2mm 幅広に）
+    HEIGHT       = 14.5,   # 胴体の高さ（Dカット部が2.5mm長い軸用に 12 → 14.5mm）
+    TAPER        = 3.25,   # 上に行くほど細くなる量（上端の直径 15 → 11.75mm、通常版と同じ天面サイズ）
+    CAVITY_D     = 9.0,    # 底の穴の直径（本体 Ø8 が入る）
+    CAVITY_DEPTH = 5.0,    # 底の穴の深さ
+    SHAFT_D      = 6.0,    # 軸穴の直径
+    SHAFT_DEPTH  = 7.5,    # 軸穴（Dカット部）の深さ（5 → 7.5mm、Dカットが2.5mm長い軸用）
+    D_FLAT       = 4.5,    # Dカット部の幅
+    CLEARANCE    = 0.15,   # 穴のすき間（片側）。軸が楽に入る大きさにして、固定はリブで行う
+    RIB_COUNT    = 3,      # 軸穴の圧入リブの本数（Dの平面の中央 + 円弧側に等間隔）。0 でリブなし
+    RIB_HEIGHT   = 0.25,   # リブの高さ。すき間 0.15 との差 0.10mm ぶん軸に食い込む
+    RIB_WIDTH    = 0.8,    # リブの幅
+    RIB_LEADIN   = 0.6,    # 入口でリブを徐々に高くする長さ（差し込みやすくする）
+
+    KNURL_TYPE   = "ayame",  # "ayame"=アヤメ / "hirame"=平目（縦溝） / "none"=なし
+    KNURL_COUNT  = 12,       # 一周あたりの山の数（少ないほど荒い）
+    KNURL_DEPTH  = 0.4,      # 山の平らな頂上から溝の底までの深さ
+    KNURL_ANGLE  = 45.0,     # 溝の傾き（縦方向から、度）
+    PLAIN_TOP    = 1.0,      # 側面の上側の平らな帯の高さ
+    PLAIN_BOTTOM = 1.0,      # 側面の下側の平らな帯の高さ
+    SEP_WIDTH    = 0.5,      # 帯と網目の境目の切れ込みの幅
+    SEP_DEPTH    = 0.6,      # 切れ込みの深さ（帯の表面から）。0 で切れ込みなし
+
+    DOME_HEIGHT  = 1.46,     # 天面ドームの高さ（前回の半球 4.875mm の30%）。0 で平ら
+    DOME_RIM     = 0.5,      # ドームの外側に残す平らな縁の幅
+
+    # 以下は DOME_HEIGHT = 0 のときだけ使う
+    TOP_RECESS   = False,    # 天面のくぼみ
+    TOP_DEPTH    = 0.5,      # くぼみの深さ
+    TOP_RIM      = 0.5,      # くぼみの縁の幅
+    LOGO_HEIGHT  = 0.5,      # イラストの浮き出し高さ
+    LOGO_MARGIN  = 0.25,     # イラストとくぼみの壁のすき間
+    LOGO_ROT     = 0.0,      # イラストの回転角（度）
+)
+USE_LOGO   = False   # True でイラストあり（DOME_HEIGHT = 0 と TOP_RECESS = True のとき）
+MAKE_SOLID = False   # True: 編集できるソリッドに変換（面が多いので数十秒かかります）
+
+# イラストの輪郭（半径1に正規化。outer=線の外形, holes=線の内側の抜き）
+LOGO_DATA = {"outer":[[0.1515,0.9666],[-0.2632,0.7792],[-0.427,0.8301],[-0.447,0.8283],[-0.8872,0.4026],[-0.9382,0.3462],[-0.9345,-0.0631],[-0.5725,-0.5125],[-0.5543,-0.5125],[-0.3724,-0.416],[-0.3124,-0.4815],[-0.2978,-0.4815],[-0.1759,-0.4288],[-0.094,-0.5161],[-0.0158,-0.9836],[-0.0013,-1.0],[0.1625,-0.9218],[0.288,-0.8508],[0.288,-0.8308],[0.2007,-0.4742],[0.2043,-0.4706],[0.2389,-0.4724],[0.328,-0.5598],[0.6209,-0.5598],[0.9556,-0.2214],[0.9611,-0.2086],[0.9593,0.268],[0.781,0.6245],[0.4699,0.7992]],"holes":[[[0.3044,-0.2287],[0.4972,-0.4451],[0.3698,-0.447],[0.2716,-0.3524],[0.0478,-0.3524],[0.0442,-0.3615],[0.0751,-0.467],[0.1497,-0.8017],[0.1461,-0.809],[0.0806,-0.8399],[0.0115,-0.4597],[-0.0613,-0.3797],[0.0297,-0.3378]],[[0.8246,0.217],[0.8265,-0.165],[0.6154,-0.3797],[0.4099,-0.1541],[0.6882,0.217]],[[-0.3979,0.6937],[-0.3378,0.6755],[-0.3342,0.67],[-0.4324,0.55],[-0.6871,0.2789],[-0.6853,-0.0249],[-0.4379,-0.3196],[-0.5234,-0.3669],[-0.8072,-0.0249],[-0.8072,0.288],[-0.4051,0.6919]],[[-0.0158,0.7573],[-0.1377,0.5936],[-0.4215,0.2516],[-0.4197,0.006],[-0.2123,-0.2159],[-0.1886,-0.2177],[0.2389,-0.0122],[0.4026,0.217],[0.5354,0.2134],[0.4372,0.0788],[0.288,-0.1031],[-0.2632,-0.3342],[-0.4597,-0.0995],[-0.5579,0.0078],[-0.5598,0.2352],[-0.1868,0.6809]],[[0.6682,0.5281],[0.7555,0.3444],[0.3407,0.3426],[0.3316,0.3371],[0.1406,0.0697],[-0.1632,-0.0795],[-0.2869,0.0424],[-0.2851,0.2261],[-0.0704,0.4972],[0.1588,0.801]]]}
+
+# ---------------------------------------------------------------------------
+# 穴あき多角形の三角形分割（耳切り法 + 穴のブリッジ）
+# ---------------------------------------------------------------------------
+def _area(p):
+    return 0.5 * sum(p[i][0] * p[(i + 1) % len(p)][1] - p[(i + 1) % len(p)][0] * p[i][1]
+                     for i in range(len(p)))
+
+
+def _cross(o, a, b):
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+
+def _in_tri(p, a, b, c):
+    return _cross(a, b, p) >= 0 and _cross(b, c, p) >= 0 and _cross(c, a, p) >= 0
+
+
+def _bridge(outer, hole):
+    mi = max(range(len(hole)), key=lambda i: (hole[i][0], -hole[i][1]))
+    M = hole[mi]
+    best, bi = None, None
+    n = len(outer)
+    for i in range(n):
+        a, b = outer[i], outer[(i + 1) % n]
+        if (a[1] - M[1]) * (b[1] - M[1]) > 0 or a[1] == b[1]:
+            continue
+        x = a[0] + (M[1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1])
+        if x < M[0]:
+            continue
+        if best is None or x < best:
+            best = x
+            bi = i if a[0] > b[0] else (i + 1) % n
+    I = (best, M[1])
+    P = outer[bi]
+    # P と M の間を塞ぐ頂点があれば、角度が最小のものに付け替える
+    cand, cang = bi, None
+    for i in range(n):
+        q = outer[i]
+        if q == P or q == M:
+            continue
+        pr, nx = outer[i - 1], outer[(i + 1) % n]
+        if _cross(pr, q, nx) > 0:            # 凸頂点は対象外
+            continue
+        tri = (M, I, P) if _cross(M, I, P) > 0 else (M, P, I)
+        if _in_tri(q, *tri):
+            ang = abs(math.atan2(q[1] - M[1], q[0] - M[0]))
+            if cang is None or ang < cang:
+                cand, cang = i, ang
+    bi = cand
+    return outer[:bi + 1] + hole[mi:] + hole[:mi + 1] + outer[bi:]
+
+
+def triangulate(outer, holes=()):
+    outer = [tuple(p) for p in outer]
+    if _area(outer) < 0:
+        outer.reverse()
+    hs = []
+    for h in holes:
+        h = [tuple(p) for p in h]
+        if _area(h) > 0:
+            h.reverse()
+        hs.append(h)
+    poly = outer
+    for h in sorted(hs, key=lambda h: -max(p[0] for p in h)):
+        poly = _bridge(poly, h)
+    idx = list(range(len(poly)))
+    tris = []
+    guard = 0
+    while len(idx) > 3 and guard < 100000:
+        guard += 1
+        found = False
+        for k in range(len(idx)):
+            i0, i1, i2 = idx[k - 1], idx[k], idx[(k + 1) % len(idx)]
+            a, b, c = poly[i0], poly[i1], poly[i2]
+            if _cross(a, b, c) <= 0:
+                continue
+            ok = True
+            for j in idx:
+                q = poly[j]
+                if q == a or q == b or q == c:
+                    continue
+                if _in_tri(q, a, b, c):
+                    ok = False
+                    break
+            if ok:
+                tris.append((a, b, c))
+                idx.pop(k)
+                found = True
+                break
+        if not found:
+            raise RuntimeError("triangulation failed")
+    tris.append(tuple(poly[i] for i in idx))
+    return tris
+
+
+# ---------------------------------------------------------------------------
+# Dカット軸穴の断面（圧入リブ付き）
+# ---------------------------------------------------------------------------
+def shaft_profile(a, SHAFT_D, D_FLAT, CLEARANCE, RIB_COUNT, RIB_HEIGHT, RIB_WIDTH):
+    """角度 a での軸穴の半径。D の平面は +X 側。リブは平面の中央と、そこから等間隔"""
+    rs = SHAFT_D / 2 + CLEARANCE
+    fx = D_FLAT - SHAFT_D / 2 + CLEARANCE
+    c = math.cos(a)
+    r = min(rs, fx / c) if c > 1e-9 else rs
+    if RIB_COUNT > 0 and RIB_HEIGHT > 0:
+        hw = (RIB_WIDTH / 2) / rs                     # リブの半幅（角度）
+        for k in range(RIB_COUNT):
+            ca = 2 * math.pi * k / RIB_COUNT
+            d = abs((a - ca + math.pi) % (2 * math.pi) - math.pi)
+            if d < hw:
+                r = min(r, r - RIB_HEIGHT * (1 - d / hw))
+    return r
+
+
+def build_fit_test(RIB_HEIGHTS=(0.15, 0.25, 0.35), SHAFT_D=6.0, D_FLAT=4.5, CLEARANCE=0.15,
+                   RIB_COUNT=3, RIB_WIDTH=0.8, RIB_LEADIN=0.6, OUTER_D=10.0, SPACING=13.0):
+    """はめあい確認用の短いリング（リブの高さ違い）。高さ 4/5/6mm でどれか区別できる"""
+    tris = []
+    K = 192
+    for idx, rh in enumerate(RIB_HEIGHTS):
+        H = 4.0 + idx
+        ox = (idx - (len(RIB_HEIGHTS) - 1) / 2) * SPACING
+        def O(j, z):
+            a = 2 * math.pi * j / K
+            return (ox + OUTER_D / 2 * math.cos(a), OUTER_D / 2 * math.sin(a), z)
+        def I(j, z, full):
+            a = 2 * math.pi * j / K
+            r = shaft_profile(a, SHAFT_D, D_FLAT, CLEARANCE, RIB_COUNT, rh if full else 0.0, RIB_WIDTH)
+            return (ox + r * math.cos(a), r * math.sin(a), z)
+        zr = RIB_LEADIN
+        for j in range(K):
+            # 外周（外向き）
+            tris += [(O(j, 0), O(j + 1, 0), O(j + 1, H)), (O(j, 0), O(j + 1, H), O(j, H))]
+            # 上面（上向き）
+            tris += [(O(j, H), O(j + 1, H), I(j + 1, H, True)), (O(j, H), I(j + 1, H, True), I(j, H, True))]
+            # 底面（下向き, 入口側）
+            tris += [(O(j, 0), I(j + 1, 0, False), O(j + 1, 0)), (O(j, 0), I(j, 0, False), I(j + 1, 0, False))]
+            # 穴の内壁（穴の中心向き）
+            tris += [(I(j, 0, False), I(j, zr, True), I(j + 1, zr, True)), (I(j, 0, False), I(j + 1, zr, True), I(j + 1, 0, False))]
+            tris += [(I(j, zr, True), I(j, H, True), I(j + 1, H, True)), (I(j, zr, True), I(j + 1, H, True), I(j + 1, zr, True))]
+    return tris
+
+
+# ---------------------------------------------------------------------------
+# ノブ本体
+# ---------------------------------------------------------------------------
+def build_knob(OUTER_D=13.0, HEIGHT=12.0, CAVITY_D=9.0, CAVITY_DEPTH=5.0,
+               SHAFT_D=6.0, SHAFT_DEPTH=5.0, D_FLAT=4.5, CLEARANCE=0.15,
+               RIB_COUNT=3, RIB_HEIGHT=0.25, RIB_WIDTH=0.8, RIB_LEADIN=0.6,
+               KNURL_TYPE="ayame", KNURL_COUNT=12, KNURL_DEPTH=0.4, KNURL_ANGLE=45.0,
+               PLAIN_TOP=1.0, PLAIN_BOTTOM=1.0, SEP_WIDTH=0.5, SEP_DEPTH=0.6, TAPER=3.25, DOME_HEIGHT=1.46, DOME_RIM=0.5,
+               TOP_RECESS=False, TOP_DEPTH=0.5, TOP_RIM=0.5,
+               LOGO=None, LOGO_HEIGHT=0.5, LOGO_MARGIN=0.25, LOGO_ROT=0.0):
+    """ノブ全体を、外向きにそろえた閉じた三角形メッシュとして返す（単位 mm）"""
+    R0 = OUTER_D / 2
+    N = KNURL_COUNT
+    use_knurl = KNURL_TYPE in ("ayame", "hirame")
+    Dv = 2 * KNURL_DEPTH if use_knurl else 0.0
+    Tc = Dv / 2
+    GW = SEP_WIDTH if SEP_DEPTH > 0 else 0.0     # 帯とローレットの間の切れ込みの幅
+    BB, BT = PLAIN_BOTTOM, HEIGHT - PLAIN_TOP     # 平らな帯の内側の端
+    ZB, ZT = BB + GW, BT - GW                     # ローレット部の範囲
+    q = 2
+    s = math.pi / N
+    h = s / q
+    M = 4 * q * N
+    tris = []
+
+    def Rz(z):
+        return R0 - (TAPER / 2) * z / HEIGHT
+
+    def add(t, want):
+        a, b, c = t
+        u = [b[i] - a[i] for i in range(3)]
+        v = [c[i] - a[i] for i in range(3)]
+        n = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
+        if abs(n[0]) + abs(n[1]) + abs(n[2]) < 1e-12:
+            return
+        cx = [(a[i] + b[i] + c[i]) / 3 for i in range(3)]
+        w = want(cx)
+        if n[0] * w[0] + n[1] * w[1] + n[2] * w[2] < 0:
+            t = (a, c, b)
+        tris.append(t)
+
+    UP = lambda c: (0, 0, 1)
+    DOWN = lambda c: (0, 0, -1)
+    OUT = lambda c: (c[0], c[1], 0)
+    IN = lambda c: (-c[0], -c[1], 0)
+
+    def quad(p, q_, r_, s_, want):
+        add((p, q_, r_), want)
+        add((p, r_, s_), want)
+
+    def pol(r, a, z):
+        return (r * math.cos(a), r * math.sin(a), z)
+
+    def g(i):
+        p = i % (2 * q)
+        return Dv * (p if p <= q else 2 * q - p) / q
+
+    def slope(i):
+        return 1 if (i % (2 * q)) < q else -1
+
+    # ---- ローレット側面 ----
+    HL = ZT - ZB
+    if KNURL_TYPE == "ayame":
+        t = math.tan(math.radians(KNURL_ANGLE)) / R0
+        n = max(2, int(round(HL / (h / (2 * t)))))
+    else:
+        n = 2
+
+    def drop(m, k):
+        if KNURL_TYPE == "ayame":
+            return max(g((m - k) // 2), g((m + k) // 2), Tc) - Tc
+        if KNURL_TYPE == "hirame":
+            a = g(m // 2) if m % 2 == 0 else (g(m // 2) + g(m // 2 + 1)) / 2
+            return max(a, Tc) - Tc
+        return 0.0
+
+    def P(m, k):
+        z = ZB + HL * k / n
+        return pol(Rz(z) - drop(m, k), (m % M) * h / 2, z)
+
+    for kc in range(0, n + 1):
+        for mc in range(0, M):
+            if (mc - kc - 1) % 2:
+                continue
+            m, k = mc - 1, kc
+            i, j = (m - k) // 2, (m + k) // 2
+            A, B, C, Dd = P(m, k), P(m + 1, k - 1), P(m + 1, k + 1), P(m + 2, k)
+            if KNURL_TYPE == "ayame":
+                main = kc == 0 or kc == n or slope(i) == slope(j)
+            else:
+                main = (kc % 2 == 0)
+            if main:
+                if kc > 0:
+                    add((A, B, Dd), OUT)
+                if kc < n:
+                    add((A, Dd, C), OUT)
+            else:
+                add((A, B, C), OUT)
+                add((B, Dd, C), OUT)
+
+    C = lambda m, z: pol(Rz(z), (m % M) * h / 2, z)
+
+    # ---- 上下の平らな帯、切れ込み、ローレットとの段差 ----
+    G = lambda m, z: pol(Rz(z) - SEP_DEPTH, (m % M) * h / 2, z)
+    Q = G if GW > 0 else C          # ローレットの端がつながる円（切れ込みの底 or 帯）
+    for k, z, want in ((0, ZB, UP if GW == 0 else DOWN), (n, ZT, DOWN if GW == 0 else UP)):
+        for m in [m for m in range(M) if (m - k) % 2 == 0]:
+            a, b = P(m, k), P(m + 2, k)
+            add((a, Q(m, z), Q(m + 1, z)), want)
+            add((a, Q(m + 1, z), b), want)
+            add((b, Q(m + 1, z), Q(m + 2, z)), want)
+    for m in range(M):
+        quad(C(m, 0), C(m + 1, 0), C(m + 1, BB), C(m, BB), OUT)
+        quad(C(m, BT), C(m + 1, BT), C(m + 1, HEIGHT), C(m, HEIGHT), OUT)
+        if GW > 0:
+            # 切れ込み: 帯の端の面 → 切れ込みの底の円筒
+            quad(C(m, BB), C(m + 1, BB), G(m + 1, BB), G(m, BB), UP)
+            quad(G(m, BB), G(m + 1, BB), G(m + 1, ZB), G(m, ZB), OUT)
+            quad(G(m, ZT), G(m + 1, ZT), G(m + 1, BT), G(m, BT), OUT)
+            quad(C(m, BT), C(m + 1, BT), G(m + 1, BT), G(m, BT), DOWN)
+
+    # ---- 内側（底の穴, Dカット穴 + 圧入リブ） ----
+    rc = CAVITY_D / 2 + CLEARANCE
+    z1, z2 = CAVITY_DEPTH, CAVITY_DEPTH + SHAFT_DEPTH
+    L = M // 2
+    F = 4                                   # 軸穴は底の穴の4倍細かく分割
+    K = L * F
+    prof = lambda a, full: shaft_profile(a, SHAFT_D, D_FLAT, CLEARANCE,
+                                         RIB_COUNT, RIB_HEIGHT if full else 0.0, RIB_WIDTH)
+    zr = min(z1 + RIB_LEADIN, z2)           # リブは入口から徐々に高くなる
+    Dp = lambda j, z, full: pol(prof(j * 2 * math.pi / K, full), j * 2 * math.pi / K, z)
+    for i in range(L):
+        a, b = 2 * i * h / 2, 2 * (i + 1) * h / 2
+        add((C(2 * i, 0), C(2 * i + 1, 0), pol(rc, a, 0)), DOWN)
+        add((C(2 * i + 1, 0), C(2 * i + 2, 0), pol(rc, b, 0)), DOWN)
+        add((C(2 * i + 1, 0), pol(rc, b, 0), pol(rc, a, 0)), DOWN)
+        quad(pol(rc, a, 0), pol(rc, b, 0), pol(rc, b, z1), pol(rc, a, z1), IN)
+        # 底の穴の天井（底の穴の円 L 点 と 軸穴 K 点）
+        for f in range(F):
+            j = i * F + f
+            add((pol(rc, a, z1), Dp(j, z1, False), Dp(j + 1, z1, False)), DOWN)
+        add((pol(rc, a, z1), Dp((i + 1) * F, z1, False), pol(rc, b, z1)), DOWN)
+    for j in range(K):
+        quad(Dp(j, z1, False), Dp(j + 1, z1, False), Dp(j + 1, zr, True), Dp(j, zr, True), IN)
+        if zr < z2:
+            quad(Dp(j, zr, True), Dp(j + 1, zr, True), Dp(j + 1, z2, True), Dp(j, z2, True), IN)
+        add(((0, 0, z2), Dp(j, z2, True), Dp(j + 1, z2, True)), DOWN)
+
+    # ---- 天面: 縁（平ら）+ ドーム（球面のふくらみ） ----
+    Rt = Rz(HEIGHT)
+    rd = Rt - DOME_RIM                                  # ドームの付け根の半径
+    dh = rd if DOME_HEIGHT is None else DOME_HEIGHT     # None = 半球
+    if dh > 0 and rd > 0:
+        Rs = (rd * rd + dh * dh) / (2 * dh)             # 球の半径
+        zc = HEIGHT + dh - Rs                           # 球の中心の高さ
+        amax = math.asin(min(1.0, rd / Rs))
+        if dh > Rs:                                     # 半球より高い場合
+            amax = math.pi - amax
+        NL = 24
+        def dome(m, l):                                 # l=0: 付け根, l=NL: 頂点
+            al = amax * (1 - l / NL)
+            return pol(Rs * math.sin(al), (m % M) * h / 2, zc + Rs * math.cos(al))
+        OUTD = lambda c: (c[0], c[1], c[2] - zc)
+        for m in range(M):                              # 平らな縁
+            quad(C(m, HEIGHT), C(m + 1, HEIGHT), dome(m + 1, 0), dome(m, 0), UP)
+        for l in range(NL - 1):
+            for m in range(M):
+                quad(dome(m, l), dome(m + 1, l), dome(m + 1, l + 1), dome(m, l + 1), OUTD)
+        top = (0.0, 0.0, HEIGHT + dh)
+        for m in range(M):
+            add((dome(m, NL - 1), dome(m + 1, NL - 1), top), UP)
+        return tris
+
+    # ---- 天面（くぼみ + 浮き出しイラスト） ----
+    rr = Rz(HEIGHT) - TOP_RIM
+    if not (TOP_RECESS and TOP_DEPTH > 0 and rr > 0):
+        for m in range(M):
+            add(((0, 0, HEIGHT), C(m, HEIGHT), C(m + 1, HEIGHT)), UP)
+        return tris
+
+    zf = HEIGHT - TOP_DEPTH
+    ring = [(rr * math.cos(m * h / 2), rr * math.sin(m * h / 2)) for m in range(M)]
+    for m in range(M):
+        a, b = m * h / 2, (m + 1) * h / 2
+        quad(C(m, HEIGHT), C(m + 1, HEIGHT), pol(rr, b, HEIGHT), pol(rr, a, HEIGHT), UP)
+        quad(pol(rr, a, HEIGHT), pol(rr, b, HEIGHT), pol(rr, b, zf), pol(rr, a, zf), IN)
+
+    if not LOGO:
+        for tr in triangulate(ring):
+            add(tuple((p[0], p[1], zf) for p in tr), UP)
+        return tris
+
+    # イラスト（半径1に正規化した輪郭）をくぼみの中に配置
+    sc = rr - LOGO_MARGIN
+    cr, sr = math.cos(math.radians(LOGO_ROT)), math.sin(math.radians(LOGO_ROT))
+    tf = lambda p: (round(sc * (p[0] * cr - p[1] * sr), 6), round(sc * (p[0] * sr + p[1] * cr), 6))
+    lo = [tf(p) for p in LOGO["outer"]]
+    lh = [[tf(p) for p in hh] for hh in LOGO["holes"]]
+    zt = zf + LOGO_HEIGHT
+    for tr in triangulate(ring, [lo]):                 # くぼみの底（イラスト以外）
+        add(tuple((p[0], p[1], zf) for p in tr), UP)
+    for hh in lh:                                      # イラストの中の抜き部分の底
+        for tr in triangulate(hh):
+            add(tuple((p[0], p[1], zf) for p in tr), UP)
+    for tr in triangulate(lo, lh):                     # イラストの上面
+        add(tuple((p[0], p[1], zt) for p in tr), UP)
+    # イラストの側壁（外向き = 線の外側）
+    for loop, sign in [(lo, 1)] + [(hh, -1) for hh in lh]:
+        ar = _area(loop)
+        for i in range(len(loop)):
+            a, b = loop[i], loop[(i + 1) % len(loop)]
+            dx, dy = b[0] - a[0], b[1] - a[1]
+            o = 1 if ar > 0 else -1
+            nx, ny = dy * o * sign, -dx * o * sign
+            quad((a[0], a[1], zf), (b[0], b[1], zf), (b[0], b[1], zt), (a[0], a[1], zt),
+                 lambda c, nx=nx, ny=ny: (nx, ny, 0))
+    return tris
+
+
+tris = build_knob(LOGO=LOGO_DATA if USE_LOGO else None, **P)
+mesh = Mesh.Mesh([list(p) for t in tris for p in t])
+doc = App.newDocument("Knob")
+obj = None
+
+if MAKE_SOLID:
+    try:
+        import Part
+        shp = Part.Shape()
+        shp.makeShapeFromMesh(mesh.Topology, 0.001)
+        shp.sewShape()
+        shell = shp.Shells[0] if shp.Shells else Part.Shell(shp.Faces)
+        solid = Part.Solid(shell)
+        if solid.Volume < 0:
+            solid.reverse()
+        obj = doc.addObject("Part::Feature", "Knob")
+        obj.Shape = solid
+        App.Console.PrintMessage("Knob solid OK: volume=%.1f mm^3\n" % solid.Volume)
+    except Exception as e:
+        App.Console.PrintWarning("ソリッド化できなかったのでメッシュで表示します: %s\n" % e)
+        obj = None
+
+if obj is None:
+    obj = doc.addObject("Mesh::Feature", "Knob")
+    obj.Mesh = mesh
+    App.Console.PrintMessage("Knob mesh OK: %d triangles, volume=%.1f mm^3\n" % (mesh.CountFacets, mesh.Volume))
+
+doc.recompute()
+if App.GuiUp:
+    import FreeCADGui as Gui
+    try:
+        obj.ViewObject.ShapeColor = (1.0, 0.75, 0.2)
+    except Exception:
+        pass
+    Gui.activeDocument().activeView().viewIsometric()
+    Gui.SendMsgToActiveView("ViewFit")
+
+# STL に書き出す場合は次の行の # を外す（保存先は FreeCAD のユーザーフォルダ）
+# mesh.write(App.getUserAppDataDir() + "knob.stl")
