@@ -23,71 +23,134 @@ enum custom_keycodes {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
-           KC_AUDIO_MUTE,             KC_Q,             KC_W,             KC_E,             KC_R,             KC_T,             KC_Y,             KC_U,             KC_I,             KC_O,             KC_P,     KC_BACKSPACE,
-                  KC_TAB,             KC_A,             KC_S,             KC_D,             KC_F,             KC_G,             KC_H,             KC_J,             KC_K,             KC_L,         KC_MINUS,           KC_DOT,
-           KC_LEFT_SHIFT,             KC_Z,             KC_X,             KC_C,             KC_V,             KC_B,             KC_N,             KC_M,         KC_COMMA,            KC_UP, LT(2,KC_LEFT_BRACKET),
-            KC_LEFT_CTRL,      KC_LEFT_GUI,      KC_LEFT_ALT, LT(1,KC_LANGUAGE_2),         KC_SPACE,         KC_ENTER, LT(1,KC_LANGUAGE_1),          KC_LEFT,          KC_DOWN,         KC_RIGHT
+          KC_AUDIO_MUTE,            KC_Q,            KC_W,            KC_E,
+                   KC_R,            KC_T,            KC_Y,            KC_U,
+                   KC_I,            KC_O,            KC_P,   KC_AUDIO_MUTE,
+                 KC_TAB,            KC_A,            KC_S,            KC_D,
+                   KC_F,            KC_G,            KC_H,            KC_J,
+                   KC_K,            KC_L,        KC_MINUS,    KC_BACKSPACE,
+          KC_LEFT_SHIFT,            KC_Z,            KC_X,            KC_C,
+                   KC_V,            KC_B,            KC_N,            KC_M,
+               KC_COMMA,           KC_UP, LT(2,KC_LEFT_BRACKET),    KC_LEFT_CTRL,
+            KC_LEFT_GUI,     KC_LEFT_ALT, LT(1,KC_LANGUAGE_2),        KC_SPACE,
+               KC_ENTER, LT(1,KC_LANGUAGE_1),         KC_LEFT,         KC_DOWN,
+               KC_RIGHT
     ),
     [1] = LAYOUT(
-          KC_TRANSPARENT,            KC_F1,            KC_F2,            KC_F3,            KC_F4,            KC_F5,            KC_F7,            KC_F8,            KC_F9,           KC_F10,           KC_F11,        KC_DELETE,
-               KC_ESCAPE,             KC_1,             KC_2,             KC_3,             KC_4,             KC_5,             KC_6,             KC_7,             KC_8,             KC_9,             KC_0,   KC_TRANSPARENT,
-          KC_TRANSPARENT,         KC_EQUAL, KC_INTERNATIONAL_3, KC_RIGHT_BRACKET,     KC_BACKSLASH,     KC_SEMICOLON,         KC_QUOTE,         KC_SLASH,           KC_DOT,            KC_UP,   KC_TRANSPARENT,
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT, LT(6,KC_TRANSPARENT),   KC_TRANSPARENT,   KC_TRANSPARENT, LT(6,KC_TRANSPARENT),          KC_LEFT,          KC_DOWN,         KC_RIGHT
+         KC_TRANSPARENT,           KC_F1,           KC_F2,           KC_F3,
+                  KC_F4,           KC_F5,           KC_F7,           KC_F8,
+                  KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
+              KC_ESCAPE,            KC_1,            KC_2,            KC_3,
+                   KC_4,            KC_5,            KC_6,            KC_7,
+                   KC_8,            KC_9,            KC_0,       KC_DELETE,
+         KC_TRANSPARENT,        KC_EQUAL, KC_INTERNATIONAL_3, KC_RIGHT_BRACKET,
+           KC_BACKSLASH,    KC_SEMICOLON,        KC_QUOTE,        KC_SLASH,
+                 KC_DOT,           KC_UP,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT, LT(6,KC_TRANSPARENT),  KC_TRANSPARENT,
+         KC_TRANSPARENT, LT(6,KC_TRANSPARENT),         KC_LEFT,         KC_DOWN,
+               KC_RIGHT
     ),
     [2] = LAYOUT(
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,            KC_F6,   KC_TRANSPARENT,        KC_INSERT,   KC_TRANSPARENT,           KC_F12,        KC_DELETE,
-                KC_GRAVE,   KC_TRANSPARENT,   SQL_SELECT_TMP,   KC_TRANSPARENT,  KC_PRINT_SCREEN,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   (QK_LGUI|KC_L), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LGUI|KC_DOT),
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,          KC_MENU,   KC_TRANSPARENT,       KC_PAGE_UP,   KC_TRANSPARENT,
-            KC_CAPS_LOCK,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,          KC_HOME,     KC_PAGE_DOWN,           KC_END
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
+              KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
+               KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
+        KC_PRINT_SCREEN,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  (QK_LGUI|KC_L), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LGUI|KC_DOT),
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,         KC_MENU,
+         KC_TRANSPARENT,      KC_PAGE_UP,  KC_TRANSPARENT,    KC_CAPS_LOCK,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,         KC_HOME,    KC_PAGE_DOWN,
+                 KC_END
     ),
     [3] = LAYOUT(
-           KC_AUDIO_MUTE,             KC_Q,             KC_W,             KC_E,             KC_R,             KC_T,             KC_Y,             KC_U,             KC_I,             KC_O,             KC_P,     KC_BACKSPACE,
-                  KC_TAB,             KC_A,             KC_S,             KC_D,             KC_F,             KC_G,             KC_H,             KC_J,             KC_K,             KC_L,         KC_MINUS,           KC_DOT,
-           KC_LEFT_SHIFT,             KC_Z,             KC_X,             KC_C,             KC_V,             KC_B,             KC_N,             KC_M,         KC_COMMA,            KC_UP, LT(5,KC_LEFT_BRACKET),
-             KC_LEFT_GUI,     KC_LEFT_CTRL,      KC_LEFT_ALT, LT(4,KC_LANGUAGE_2),         KC_SPACE,         KC_ENTER, LT(4,KC_LANGUAGE_1),          KC_LEFT,          KC_DOWN,         KC_RIGHT
+          KC_AUDIO_MUTE,            KC_Q,            KC_W,            KC_E,
+                   KC_R,            KC_T,            KC_Y,            KC_U,
+                   KC_I,            KC_O,            KC_P, KC_MEDIA_PLAY_PAUSE,
+                 KC_TAB,            KC_A,            KC_S,            KC_D,
+                   KC_F,            KC_G,            KC_H,            KC_J,
+                   KC_K,            KC_L,        KC_MINUS,    KC_BACKSPACE,
+          KC_LEFT_SHIFT,            KC_Z,            KC_X,            KC_C,
+                   KC_V,            KC_B,            KC_N,            KC_M,
+               KC_COMMA,           KC_UP, LT(5,KC_LEFT_BRACKET),     KC_LEFT_GUI,
+           KC_LEFT_CTRL,     KC_LEFT_ALT, LT(4,KC_LANGUAGE_2),        KC_SPACE,
+               KC_ENTER, LT(4,KC_LANGUAGE_1),         KC_LEFT,         KC_DOWN,
+               KC_RIGHT
     ),
     [4] = LAYOUT(
-          KC_TRANSPARENT,            KC_F1,            KC_F2,            KC_F3,            KC_F4,            KC_F5,            KC_F7,            KC_F8,            KC_F9,           KC_F10,           KC_F11,        KC_DELETE,
-               KC_ESCAPE,             KC_1,             KC_2,             KC_3,             KC_4,             KC_5,             KC_6,             KC_7,             KC_8,             KC_9,             KC_0,   KC_TRANSPARENT,
-          KC_TRANSPARENT,         KC_EQUAL, KC_INTERNATIONAL_3, KC_RIGHT_BRACKET,     KC_BACKSLASH,     KC_SEMICOLON,         KC_QUOTE,         KC_SLASH,           KC_DOT,            KC_UP,   KC_TRANSPARENT,
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT, LT(6,KC_TRANSPARENT),   KC_TRANSPARENT,   KC_TRANSPARENT, LT(6,KC_TRANSPARENT),          KC_LEFT,          KC_DOWN,         KC_RIGHT
+         KC_TRANSPARENT,           KC_F1,           KC_F2,           KC_F3,
+                  KC_F4,           KC_F5,           KC_F7,           KC_F8,
+                  KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
+              KC_ESCAPE,            KC_1,            KC_2,            KC_3,
+                   KC_4,            KC_5,            KC_6,            KC_7,
+                   KC_8,            KC_9,            KC_0,  KC_TRANSPARENT,
+         KC_TRANSPARENT,        KC_EQUAL, KC_INTERNATIONAL_3, KC_RIGHT_BRACKET,
+           KC_BACKSLASH,    KC_SEMICOLON,        KC_QUOTE,        KC_SLASH,
+                 KC_DOT,           KC_UP,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT, LT(6,KC_TRANSPARENT),  KC_TRANSPARENT,
+         KC_TRANSPARENT, LT(6,KC_TRANSPARENT),         KC_LEFT,         KC_DOWN,
+               KC_RIGHT
     ),
     [5] = LAYOUT(
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,            KC_F6,   KC_TRANSPARENT,        KC_INSERT,   KC_TRANSPARENT,           KC_F12, (QK_LGUI|KC_BACKSPACE),
-                KC_GRAVE,   KC_TRANSPARENT,   SQL_SELECT_TMP,   KC_TRANSPARENT,   MAC_SCREENSHOT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT, (QK_LCTL|QK_LGUI|KC_Q), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LCTL|QK_LGUI|KC_SPACE),
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,          KC_MENU,   KC_TRANSPARENT,       KC_PAGE_UP,   KC_TRANSPARENT,
-            KC_CAPS_LOCK,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,          KC_HOME,     KC_PAGE_DOWN,           KC_END
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
+              KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
+               KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
+         MAC_SCREENSHOT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT, (QK_LCTL|QK_LGUI|KC_Q), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LCTL|QK_LGUI|KC_SPACE),
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,         KC_MENU,
+         KC_TRANSPARENT,      KC_PAGE_UP,  KC_TRANSPARENT,    KC_CAPS_LOCK,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,         KC_HOME,    KC_PAGE_DOWN,
+                 KC_END
     ),
     [6] = LAYOUT(
-          KC_TRANSPARENT,   KC_TRANSPARENT,            DF(0),   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,    QK_BOOTLOADER,
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,       LAYER_INFO,   KC_TRANSPARENT,   KC_TRANSPARENT,            MO(3),   KC_TRANSPARENT,            DF(0),   KC_TRANSPARENT,
-          KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,   KC_TRANSPARENT,            DF(0),            DF(3),            DF(3)
+         KC_TRANSPARENT,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,   QK_BOOTLOADER,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+             LAYER_INFO,  KC_TRANSPARENT,  KC_TRANSPARENT,           MO(3),
+         KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,           DF(0),           DF(3),
+                  DF(3)
     )
 };
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [0] = {
-        { KC_MS_WH_LEFT, KC_MS_WH_RIGHT }, { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
+        { KC_MS_WH_LEFT  , KC_MS_WH_RIGHT  },
+        { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
     },
     [1] = {
-        { KC_TRANSPARENT, KC_TRANSPARENT }, { KC_TRANSPARENT, KC_TRANSPARENT }
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
     },
     [2] = {
-        { KC_TRANSPARENT, KC_TRANSPARENT }, { (QK_LCTL|QK_LGUI|KC_LEFT), (QK_LCTL|QK_LGUI|KC_RIGHT) }
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { (QK_LCTL|QK_LGUI|KC_LEFT), (QK_LCTL|QK_LGUI|KC_RIGHT) }
     },
     [3] = {
-        { KC_MS_WH_LEFT, KC_MS_WH_RIGHT }, { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
+        { KC_MS_WH_LEFT  , KC_MS_WH_RIGHT  },
+        { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
     },
     [4] = {
-        { KC_TRANSPARENT, KC_TRANSPARENT }, { KC_TRANSPARENT, KC_TRANSPARENT }
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
     },
     [5] = {
-        { KC_TRANSPARENT, KC_TRANSPARENT }, { (QK_LCTL|KC_RIGHT), (QK_LCTL|KC_LEFT) }
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { (QK_LCTL|KC_RIGHT), (QK_LCTL|KC_LEFT) }
     },
     [6] = {
-        { KC_TRANSPARENT, KC_TRANSPARENT }, { KC_TRANSPARENT, KC_TRANSPARENT }
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
     }
 };
 #endif
