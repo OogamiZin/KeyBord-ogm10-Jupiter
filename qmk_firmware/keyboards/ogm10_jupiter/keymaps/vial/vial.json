@@ -3,6 +3,23 @@
   "vendorId": "0x4F47",
   "productId": "0x0A10",
   "lighting": "none",
+  "customKeycodes": [
+    {
+      "name": "MAC_SCREENSHOT",
+      "title": "Mac screenshot (Shift+Cmd+Ctrl+4)",
+      "shortName": "MacSS"
+    },
+    {
+      "name": "LAYER_INFO",
+      "title": "Type default layer info",
+      "shortName": "LyrInfo"
+    },
+    {
+      "name": "SQL_SELECT_TMP",
+      "title": "SQL-SELECT-TMP (Select/From/Where/Order by template)",
+      "shortName": "SQLSel"
+    }
+  ],
   "matrix": {
     "rows": 4,
     "cols": 12
@@ -103,7 +120,7 @@
         "0,0\n\n\n\n\n\n\n\n\ne",
         "0,1\n\n\n\n\n\n\n\n\ne",
         {
-          "x": 8.0
+          "x": 8
         },
         "1,0\n\n\n\n\n\n\n\n\ne",
         "1,1\n\n\n\n\n\n\n\n\ne"
