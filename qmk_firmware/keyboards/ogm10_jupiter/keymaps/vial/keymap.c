@@ -24,7 +24,7 @@ enum custom_keycodes {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
-                LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
+           LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P,   KC_AUDIO_MUTE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -38,7 +38,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [1] = LAYOUT(
-                LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
+           LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -52,7 +52,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [2] = LAYOUT(
-                LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+           LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
@@ -66,7 +66,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [3] = LAYOUT(
-                LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
+           LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P, KC_MEDIA_PLAY_PAUSE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -80,7 +80,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [4] = LAYOUT(
-                LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
+           LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -94,7 +94,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [5] = LAYOUT(
-                LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+           LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
@@ -108,7 +108,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [6] = LAYOUT(
-                LAYER_STATUS,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
+           LAYER_STATUS,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
@@ -120,6 +120,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           DF(0),           DF(3),
                   DF(3)
+    ),
+    [7] = LAYOUT(
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT
     )
 };
 
@@ -150,6 +164,10 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
         { (QK_LCTL|KC_RIGHT), (QK_LCTL|KC_LEFT) }
     },
     [6] = {
+        { KC_TRANSPARENT , KC_TRANSPARENT  },
+        { KC_TRANSPARENT , KC_TRANSPARENT  }
+    },
+    [7] = {
         { KC_TRANSPARENT , KC_TRANSPARENT  },
         { KC_TRANSPARENT , KC_TRANSPARENT  }
     }
