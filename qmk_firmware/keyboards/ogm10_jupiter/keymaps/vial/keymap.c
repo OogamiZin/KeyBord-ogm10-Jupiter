@@ -326,7 +326,33 @@ static bool dm_is_pos(keyrecord_t *record, uint8_t row, uint8_t col) {
     return record->event.key.row == row && record->event.key.col == col;
 }
 
+// ---- Mac 接続時（デフォルトレイヤー3）だけ Alt+Tab を Cmd+Tab に置き換える ----
+// Alt を押したまま Tab を押すと、Alt を Cmd に持ち替えて Tab を送る。
+// Alt を離すまで Cmd を押しっぱなしにするので、Tab を続けて押してアプリを選べる（Shift で逆順）。
+static bool mac_cmd_tab_active = false;
+
+static bool mac_cmd_tab_process(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == KC_TAB && record->event.pressed &&
+        get_highest_layer(default_layer_state) == 3 &&
+        (mac_cmd_tab_active || (get_mods() & MOD_MASK_ALT))) {
+        if (!mac_cmd_tab_active) {
+            del_mods(MOD_MASK_ALT);
+            register_mods(MOD_BIT(KC_LGUI));
+            mac_cmd_tab_active = true;
+        }
+        return true; // Tab 自体は通常どおり送る
+    }
+    if (mac_cmd_tab_active && !record->event.pressed &&
+        (keycode == KC_LEFT_ALT || keycode == KC_RIGHT_ALT)) {
+        unregister_mods(MOD_BIT(KC_LGUI));
+        mac_cmd_tab_active = false;
+    }
+    return true;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    mac_cmd_tab_process(keycode, record);
+
     if (!dm_in_playback) {
         if (record->event.pressed) {
             if (dm_trigger_mods_held()) {
