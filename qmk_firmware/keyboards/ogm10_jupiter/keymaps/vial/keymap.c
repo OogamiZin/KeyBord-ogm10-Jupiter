@@ -16,6 +16,7 @@ enum custom_keycodes {
     MAC_SCREENSHOT = QK_KB_0,
     LAYER_INFO,
     SQL_SELECT_TMP,
+    LAYER_STATUS,
 };
 /* USER INCLUDE END */
 
@@ -23,7 +24,7 @@ enum custom_keycodes {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
-                KC_KP_0,            KC_Q,            KC_W,            KC_E,
+                LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P,   KC_AUDIO_MUTE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -37,7 +38,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [1] = LAYOUT(
-                KC_KP_1,           KC_F1,           KC_F2,           KC_F3,
+                LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -51,7 +52,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [2] = LAYOUT(
-                KC_KP_2,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+                LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
@@ -65,7 +66,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [3] = LAYOUT(
-                KC_KP_3,            KC_Q,            KC_W,            KC_E,
+                LAYER_STATUS,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P, KC_MEDIA_PLAY_PAUSE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -79,7 +80,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [4] = LAYOUT(
-                KC_KP_4,           KC_F1,           KC_F2,           KC_F3,
+                LAYER_STATUS,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -93,7 +94,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [5] = LAYOUT(
-                KC_KP_5,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+                LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
@@ -107,7 +108,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [6] = LAYOUT(
-                KC_KP_6,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
+                LAYER_STATUS,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
@@ -402,6 +403,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     tap_code16(LGUI(KC_RIGHT));  // Mac: Cmd+→
                 } else {
                     tap_code(KC_END);            // Windows など: End
+                }
+            }
+            return false;
+
+        case LAYER_STATUS:
+            if (record->event.pressed) {
+                // 現在有効なレイヤーとデフォルトレイヤーを入力する（例: "Layer 4 (default 3: macOS)"）
+                uint8_t def = get_highest_layer(default_layer_state);
+                uint8_t cur = get_highest_layer(layer_state | default_layer_state);
+                // 英数(IMEオフ)に切り替えてから入力
+                tap_code(KC_LANGUAGE_2);
+                wait_ms(50);
+                SEND_STRING("Layer ");
+                send_char('0' + cur);
+                SEND_STRING(" (default ");
+                send_char('0' + def);
+                if (def == 3) {
+                    SEND_STRING(": macOS)");
+                } else {
+                    SEND_STRING(": Windows)");
                 }
             }
             return false;

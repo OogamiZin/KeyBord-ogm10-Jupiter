@@ -18,6 +18,11 @@
       "name": "SQL_SELECT_TMP",
       "title": "SQL-SELECT-TMP (Select/From/Where/Order by template)",
       "shortName": "SQLSel"
+    },
+    {
+      "name": "LAYER_STATUS",
+      "title": "Type current layer status",
+      "shortName": "LyrStat"
     }
   ],
   "matrix": {
