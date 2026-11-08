@@ -348,11 +348,14 @@ static bool dm_is_pos(keyrecord_t *record, uint8_t row, uint8_t col) {
 // ---- Mac 接続時（デフォルトレイヤー3）だけ Alt+Tab を Cmd+Tab に置き換える ----
 // Alt を押したまま Tab を押すと、Alt を Cmd に持ち替えて Tab を送る。
 // Alt を離すまで Cmd を押しっぱなしにするので、Tab を続けて押してアプリを選べる（Shift で逆順）。
+// 接続先OSで決まるデフォルトレイヤー（Mac = 3、それ以外 = 0）。housekeeping_task_user で設定
+static uint8_t os_default_layer = 0;
+
 static bool mac_cmd_tab_active = false;
 
 static bool mac_cmd_tab_process(uint16_t keycode, keyrecord_t *record) {
     if (keycode == KC_TAB && record->event.pressed &&
-        get_highest_layer(default_layer_state) == 3 &&
+        os_default_layer == 3 &&
         (mac_cmd_tab_active || (get_mods() & MOD_MASK_ALT))) {
         if (!mac_cmd_tab_active) {
             del_mods(MOD_MASK_ALT);
@@ -369,7 +372,58 @@ static bool mac_cmd_tab_process(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+// ---- 左上キー（左エンコーダー押し込み / LAYER_STATUS）長押し中のレイヤー固定 ----
+// デフォルトレイヤーにいるとき: 長押ししながら Q,W,E,R,T,Y,U,P の位置 -> レイヤー 1,2,3,4,5,6,7,0 に固定
+// 固定中（デフォルトレイヤー以外）: 長押ししながら どのキーを押しても デフォルトレイヤーに戻す
+// （キーの割り当てではなく物理的なキー位置で判定。長押し中に押したキーは PC に送らない）
+static bool layer_key_held = false;
+static bool layer_key_used = false;
+
+static int8_t layer_lock_target(keypos_t key) {
+    if (key.row != 0) return -1;
+    if (key.col >= 1 && key.col <= 7) return key.col; // Q W E R T Y U -> 1〜7
+    if (key.col == 10) return 0;                      // P -> 0
+    return -1;
+}
+
+static bool layer_is_default(void) {
+    return layer_state == 0 && get_highest_layer(default_layer_state) == os_default_layer;
+}
+
+static void layer_lock(uint8_t layer) {
+    layer_clear();
+    if (layer >= os_default_layer) {
+        // デフォルトレイヤーの上に重ねる（透過キーはデフォルトレイヤーのキーになる）
+        default_layer_set(1UL << os_default_layer);
+        if (layer != os_default_layer) layer_on(layer);
+    } else {
+        // Mac 接続時にレイヤー0〜2を選んだ場合: レイヤー0を土台にする（透過キーはレイヤー0のキーになる）
+        default_layer_set(1UL << 0);
+        if (layer != 0) layer_on(layer);
+    }
+}
+
+static void layer_unlock(void) {
+    layer_clear();
+    default_layer_set(1UL << os_default_layer);
+}
+
+// true を返したらそのキーは処理済み（PC に送らない）
+static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
+    if (!layer_key_held || keycode == LAYER_STATUS || !record->event.pressed) return false;
+    layer_key_used = true;
+    if (layer_is_default()) {
+        int8_t target = layer_lock_target(record->event.key);
+        if (target >= 0) layer_lock((uint8_t)target);
+    } else {
+        layer_unlock();
+    }
+    return true;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (layer_key_combo_process(keycode, record)) return false;
+
     mac_cmd_tab_process(keycode, record);
 
     if (!dm_in_playback) {
@@ -417,7 +471,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 // 2行上(From の行)に戻って行末へ移動
                 tap_code(KC_UP);
                 tap_code(KC_UP);
-                if (get_highest_layer(default_layer_state) == 3) {
+                if (os_default_layer == 3) {
                     tap_code16(LGUI(KC_RIGHT));  // Mac: Cmd+→
                 } else {
                     tap_code(KC_END);            // Windows など: End
@@ -427,20 +481,25 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case LAYER_STATUS:
             if (record->event.pressed) {
-                // 現在有効なレイヤーとデフォルトレイヤーを入力する（例: "Layer 4 (default 3: macOS)"）
-                uint8_t def = get_highest_layer(default_layer_state);
-                uint8_t cur = get_highest_layer(layer_state | default_layer_state);
-                // 英数(IMEオフ)に切り替えてから入力
-                tap_code(KC_LANGUAGE_2);
-                wait_ms(50);
-                SEND_STRING("Layer ");
-                send_char('0' + cur);
-                SEND_STRING(" (default ");
-                send_char('0' + def);
-                if (def == 3) {
-                    SEND_STRING(": macOS)");
-                } else {
-                    SEND_STRING(": Windows)");
+                layer_key_held = true;
+                layer_key_used = false;
+            } else {
+                layer_key_held = false;
+                if (!layer_key_used) {
+                    // 単押し: 現在有効なレイヤーとデフォルトレイヤーを入力する（例: "Layer 4 (default 3: macOS)"）
+                    uint8_t cur = get_highest_layer(layer_state | default_layer_state);
+                    // 英数(IMEオフ)に切り替えてから入力
+                    tap_code(KC_LANGUAGE_2);
+                    wait_ms(50);
+                    SEND_STRING("Layer ");
+                    send_char('0' + cur);
+                    SEND_STRING(" (default ");
+                    send_char('0' + os_default_layer);
+                    if (os_default_layer == 3) {
+                        SEND_STRING(": macOS)");
+                    } else {
+                        SEND_STRING(": Windows)");
+                    }
                 }
             }
             return false;
@@ -448,7 +507,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case LAYER_INFO:
             if (record->event.pressed) {
                 // 現在のデフォルトレイヤーに応じた文章を入力する
-                if (get_highest_layer(default_layer_state) == 3) {
+                if (os_default_layer == 3) {
                     SEND_STRING("The default layer is 3 for macOS.");
                 } else {
                     SEND_STRING("The default layer is 0 for Windows and other operating systems.");
@@ -487,8 +546,12 @@ void housekeeping_task_user(void) {
     if (os != applied_os) {
         applied_os = os;
         if (os == OS_MACOS || os == OS_IOS) {
+            os_default_layer = 3;
+            layer_clear();
             default_layer_set(1UL << 3);
         } else {
+            os_default_layer = 0;
+            layer_clear();
             default_layer_set(1UL << 0);
         }
     }
