@@ -23,7 +23,7 @@ enum custom_keycodes {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT(
-          KC_AUDIO_MUTE,            KC_Q,            KC_W,            KC_E,
+                KC_KP_0,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P,   KC_AUDIO_MUTE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -37,7 +37,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [1] = LAYOUT(
-         KC_TRANSPARENT,           KC_F1,           KC_F2,           KC_F3,
+                KC_KP_1,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -51,7 +51,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [2] = LAYOUT(
-         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+                KC_KP_2,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
@@ -65,7 +65,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [3] = LAYOUT(
-          KC_AUDIO_MUTE,            KC_Q,            KC_W,            KC_E,
+                KC_KP_3,            KC_Q,            KC_W,            KC_E,
                    KC_R,            KC_T,            KC_Y,            KC_U,
                    KC_I,            KC_O,            KC_P, KC_MEDIA_PLAY_PAUSE,
                  KC_TAB,            KC_A,            KC_S,            KC_D,
@@ -79,7 +79,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [4] = LAYOUT(
-         KC_TRANSPARENT,           KC_F1,           KC_F2,           KC_F3,
+                KC_KP_4,           KC_F1,           KC_F2,           KC_F3,
                   KC_F4,           KC_F5,           KC_F7,           KC_F8,
                   KC_F9,          KC_F10,          KC_F11,  KC_TRANSPARENT,
               KC_ESCAPE,            KC_1,            KC_2,            KC_3,
@@ -93,12 +93,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                KC_RIGHT
     ),
     [5] = LAYOUT(
-         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+                KC_KP_5,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,           KC_F6,  KC_TRANSPARENT,
               KC_INSERT,  KC_TRANSPARENT,          KC_F12,  KC_TRANSPARENT,
                KC_GRAVE,  KC_TRANSPARENT,  SQL_SELECT_TMP,  KC_TRANSPARENT,
          MAC_SCREENSHOT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
-         KC_TRANSPARENT, (QK_LCTL|QK_LGUI|KC_Q), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LCTL|KC_BACKSPACE),
+         KC_TRANSPARENT, (QK_LCTL|QK_LGUI|KC_Q), (QK_LSFT|KC_INTERNATIONAL_1), (QK_LGUI|KC_BACKSPACE),
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,         KC_MENU,
          KC_TRANSPARENT,      KC_PAGE_UP,  KC_TRANSPARENT,    KC_CAPS_LOCK,
@@ -107,7 +107,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [6] = LAYOUT(
-         KC_TRANSPARENT,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
+                KC_KP_6,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
@@ -125,8 +125,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [0] = {
-        { KC_MS_WH_LEFT  , KC_MS_WH_RIGHT  },
-        { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
+        { KC_MS_WH_RIGHT , KC_MS_WH_LEFT   },
+        { KC_AUDIO_VOL_UP, KC_AUDIO_VOL_DOWN }
     },
     [1] = {
         { KC_TRANSPARENT , KC_TRANSPARENT  },
@@ -137,8 +137,8 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
         { (QK_LCTL|QK_LGUI|KC_LEFT), (QK_LCTL|QK_LGUI|KC_RIGHT) }
     },
     [3] = {
-        { KC_MS_WH_LEFT  , KC_MS_WH_RIGHT  },
-        { KC_AUDIO_VOL_DOWN, KC_AUDIO_VOL_UP }
+        { KC_MS_WH_RIGHT , KC_MS_WH_LEFT   },
+        { KC_AUDIO_VOL_UP, KC_AUDIO_VOL_DOWN }
     },
     [4] = {
         { KC_TRANSPARENT , KC_TRANSPARENT  },
