@@ -108,18 +108,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                  KC_END
     ),
     [6] = LAYOUT(
-           LAYER_STATUS,  KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,
+           LAYER_STATUS,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
-         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,   QK_BOOTLOADER,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
-             LAYER_INFO,  KC_TRANSPARENT,  KC_TRANSPARENT,           MO(3),
-         KC_TRANSPARENT,           DF(0),  KC_TRANSPARENT,  KC_TRANSPARENT,
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
-         KC_TRANSPARENT,  KC_TRANSPARENT,           DF(0),           DF(3),
-                  DF(3)
+             LAYER_INFO,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
+         KC_TRANSPARENT
     ),
     [7] = LAYOUT(
          KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,  KC_TRANSPARENT,
@@ -427,13 +427,6 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    // 左ノブ押し込み + 右ノブ押し込み + Backspace（いずれも物理位置: [0,0] [0,11] [1,11]）の3つ同時押しで
-    // ブートローダー（QK_BOOT）に入る。マトリクスを直接見るので、レイヤーやキー割り当てに関係なく動く
-    if (record->event.pressed &&
-        matrix_is_on(0, 0) && matrix_is_on(0, 11) && matrix_is_on(1, 11)) {
-        reset_keyboard();
-        return false;
-    }
     if (layer_key_combo_process(keycode, record)) return false;
 
     // マクロ再生中: Alt/Cmd を押したまま Tab が押されたら覚えておく（待つのは post_process_record_user）
