@@ -48,12 +48,12 @@
             {
                 "pin_a": "GP12",
                 "pin_b": "GP13",
-                "resolution": 2
+                "resolution": 4
             },
             {
                 "pin_a": "GP24",
                 "pin_b": "GP25",
-                "resolution": 2
+                "resolution": 4
             }
         ]
     },
