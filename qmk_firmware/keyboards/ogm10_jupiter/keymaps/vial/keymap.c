@@ -333,6 +333,11 @@ static keypos_t dm_trigger_pos;
 static uint16_t dm_trigger_kc      = KC_NO;  // 実行する DM_* キーコード
 static bool     dm_in_playback     = false;  // マクロ再生中はトリガー判定をしない
 
+// マクロ再生中に Alt(Mac は Cmd)+Tab でウインドウを切り替えたら、Alt/Cmd を離した後に少し待つ
+// （切り替え先のウインドウが前面に来る前に、続きのキーが送られてしまうのを防ぐ）
+#define DM_ALT_TAB_DELAY_MS 300
+static bool dm_alt_tab_pending = false;
+
 // Ctrl / Shift / @ の位置のキーが「今まさに物理的に」押されているか
 // （イベントで追いかけると、マクロ再生で離しイベントが流れて状態がずれるため、マトリクスを直接見る）
 static bool dm_trigger_mods_held(void) {
@@ -424,6 +429,11 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (layer_key_combo_process(keycode, record)) return false;
 
+    // マクロ再生中: Alt/Cmd を押したまま Tab が押されたら覚えておく（待つのは post_process_record_user）
+    if (dm_in_playback && keycode == KC_TAB && record->event.pressed &&
+        (get_mods() & (MOD_MASK_ALT | MOD_MASK_GUI))) {
+        dm_alt_tab_pending = true;
+    }
     mac_cmd_tab_process(keycode, record);
 
     if (!dm_in_playback) {
@@ -457,6 +467,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             dm_in_playback    = (kc == DM_PLY1);
             process_dynamic_macro(kc, record);          // REC / PLY は離したときに動く
             dm_in_playback    = false;
+            dm_alt_tab_pending = false;
             return false;                               // 離しもPCには送らない
         }
     }
@@ -536,6 +547,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     return true;
+}
+
+// マクロ再生中の Alt(Cmd)+Tab: Alt/Cmd を離した（＝ウインドウが切り替わった）後に DM_ALT_TAB_DELAY_MS 待つ
+// （離すキーが PC に送られた後に呼ばれる）
+void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (dm_alt_tab_pending && !record->event.pressed &&
+        (keycode == KC_LEFT_ALT || keycode == KC_RIGHT_ALT ||
+         keycode == KC_LEFT_GUI || keycode == KC_RIGHT_GUI)) {
+        dm_alt_tab_pending = false;
+        wait_ms(DM_ALT_TAB_DELAY_MS);
+    }
 }
 
 // 接続先OSに応じてデフォルトレイヤーを切り替える
