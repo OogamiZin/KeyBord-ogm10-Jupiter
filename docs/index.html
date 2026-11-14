@@ -151,8 +151,16 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .k.layer > div { background: var(--chip); border-color: var(--accent); }
 .k.macro > div, .k.custom > div { background: var(--chip-key); }
 .k.enc > div { border-radius: 50%; }
+.menu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 40; width: min(440px, calc(100vw - 48px)); max-height: 340px; overflow: auto; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.menu.up { top: auto; bottom: calc(100% + 4px); }
+.menu .mhead { padding: 6px 8px 2px; font-size: 12px; font-weight: 700; color: var(--sub); }
+.menu .mitem { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: 6px; background: none; text-align: left; }
+.menu .mitem:hover, .menu .mitem:focus-visible { background: var(--chip); }
+.menu .mn { font-family: var(--mono); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu .md { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tip { position: fixed; z-index: 60; max-width: min(400px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.55; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); pointer-events: none; overflow-wrap: anywhere; }
 #tip strong { display: block; font-family: var(--mono); margin-bottom: 2px; }
+#tip div { white-space: pre-line; }
 #legend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
 #legend dt { font-family: var(--mono); font-weight: 650; padding: 0 8px; border-radius: 5px; background: var(--chip-key); align-self: start; white-space: nowrap; }
 #legend dd { margin: 0; }
@@ -293,7 +301,7 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
           <option value="1">押している間だけ（MO）</option><option value="3">押すたびに切り替え（TG）</option><option value="0">そのレイヤーへ移動（TO）</option>
           <option value="2">基本レイヤーにする（DF）</option><option value="4">次の1打だけ（OSL）</option><option value="6">長押しで一時・連打で切り替え（TT）</option>
         </select><select id="kOpLayer"></select><button id="kOpSet">設定</button></div>
-        <div class="group"><span class="cap">マクロ・専用キー・その他</span><select id="kSpecial"></select><button id="kSpecialSet">設定</button></div>
+        <div class="group" style="position:relative"><span class="cap">マクロ・専用キー・その他</span><button id="kSpecialBtn" aria-haspopup="true">一覧から選ぶ ▾</button><div id="kSpecialMenu" class="menu" hidden></div></div>
       </div>
       <p class="hint">下の仮想キーボードをクリックしても割り当てられます。Ctrl・Shift などを先にクリックしてから他のキーを押すと、組み合わせ（例: LCTL+LSFT+K）になります。
         <label><input type="checkbox" id="kHold" checked> 修飾キーは組み合わせ用に保持する（外すと、修飾キー単体を割り当て）</label></p>
@@ -1462,7 +1470,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   const layerLabel = l => { const i = layerInfo(l); return 'レイヤー ' + l + (i && i.label ? '（' + i.label + '）' : ''); };
   /* カーソルを乗せるとすぐ出る説明（専用キーとマクロ用）。小窓の中でも動くよう、要素のある文書に作る */
   function tipHide(doc) { const t = doc.getElementById('tip'); if (t) t.hidden = true; }
-  function tipShow(el, title, body) {
+  function tipShow(el, title, body, side) {
     const doc = el.ownerDocument;
     let t = doc.getElementById('tip');
     if (!t) { t = doc.createElement('div'); t.id = 'tip'; doc.body.appendChild(t); }
@@ -1471,9 +1479,15 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const b = doc.createElement('div'); b.textContent = body;
     t.append(h, b); t.hidden = false;
     const r = el.getBoundingClientRect(), vw = doc.documentElement.clientWidth, vh = doc.documentElement.clientHeight;
-    const x = Math.min(Math.max(8, r.left + r.width / 2 - t.offsetWidth / 2), vw - t.offsetWidth - 8);
+    let x = Math.min(Math.max(8, r.left + r.width / 2 - t.offsetWidth / 2), vw - t.offsetWidth - 8);
     let y = r.bottom + 6;
     if (y + t.offsetHeight > vh - 8) y = r.top - t.offsetHeight - 6;
+    if (side) {
+      /* 一覧の項目では、項目を隠さないよう横（入らなければ反対側）に出す */
+      x = r.right + 8;
+      if (x + t.offsetWidth > vw - 8) x = r.left - t.offsetWidth - 8;
+      y = Math.min(r.top, vh - t.offsetHeight - 8);
+    }
     t.style.left = Math.max(8, x) + 'px'; t.style.top = Math.max(8, y) + 'px';
   }
   /* キーの表示に説明があれば、カーソルを乗せたときに出す。付けたら true */
@@ -1673,19 +1687,39 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       layers.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = layerLabel(l); sel.appendChild(o); });
       sel.value = keep !== '' && Number(keep) < D.layers ? keep : (D.layers > 1 ? '1' : '0');
     }
-    const sp = $('kSpecial'); sp.textContent = '';
+    /* マクロ・専用キー・その他の一覧（項目にカーソルを乗せると説明が出る） */
+    const menu = $('kSpecialMenu'); menu.textContent = '';
     const group = (label, items) => {
       if (!items.length) return;
-      const g = document.createElement('optgroup'); g.label = label;
-      items.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; g.appendChild(o); });
-      sp.appendChild(g);
+      const h = document.createElement('div'); h.className = 'mhead'; h.textContent = label; menu.appendChild(h);
+      items.forEach(([value, name, short, desc]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'mitem'; b.dataset.v = value;
+        const n = document.createElement('span'); n.className = 'mn'; n.textContent = name;
+        const d = document.createElement('span'); d.className = 'md'; d.textContent = short;
+        b.append(n, d);
+        if (desc) { b.addEventListener('mouseenter', () => tipShow(b, name, desc, true)); b.addEventListener('mouseleave', () => tipHide(document)); b.addEventListener('focus', () => tipShow(b, name, desc, true)); b.addEventListener('blur', () => tipHide(document)); }
+        b.addEventListener('click', () => { keysMenu(false); keysAssignText(value); });
+        menu.appendChild(b);
+      });
     };
-    group('マクロ', st.macros.map((src, i) => ['M' + i, 'M' + i + (src ? '  ' + src.replace(/\s+/g, ' ').slice(0, 28) : '  （空）')]));
-    group('専用キー', D.def.custom.map((c, i) => [c.name || ('USER' + i), c.short + (c.title ? '  ' + c.title.slice(0, 30) : '')]));
-    group('マウス', [['BTN1', '左クリック'], ['BTN2', '右クリック'], ['BTN3', '中クリック'], ['BTN4', 'ボタン4'], ['BTN5', 'ボタン5'],
-      ['WH_U', 'ホイール↑'], ['WH_D', 'ホイール↓'], ['WH_L', 'ホイール←'], ['WH_R', 'ホイール→'], ['MS_U', 'カーソル↑'], ['MS_D', 'カーソル↓'], ['MS_L', 'カーソル←'], ['MS_R', 'カーソル→']]);
-    group('その他', [['BOOT', 'ブートローダーに入る'], ['REBOOT', '再起動'], ['DM_REC1', 'その場マクロ1 記録開始'], ['DM_REC2', 'その場マクロ2 記録開始'], ['DM_RSTP', 'その場マクロ 記録停止'],
-      ['DM_PLY1', 'その場マクロ1 再生'], ['DM_PLY2', 'その場マクロ2 再生'], ['CW_TOGG', 'Caps Word'], ['GESC', 'Esc（Shift/GUI で `）'], ['OSM(LSFT)', '次の1打だけ Shift'], ['OSM(LCTL)', '次の1打だけ Ctrl']]);
+    group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。「マクロ編集」で内容を書けます。']; }));
+    group('専用キー', D.def.custom.map((c, i) => [c.name || ('USER' + i), c.short, c.title, (c.name && c.name !== c.short ? c.name + '\n' : '') + (c.title || 'ファームウェアで定義された専用のキーです。')]));
+    group('マウス', [['BTN1', '左クリック'], ['BTN2', '右クリック'], ['BTN3', '中クリック'], ['BTN4', 'ボタン4（戻る）'], ['BTN5', 'ボタン5（進む）'],
+      ['WH_U', 'ホイール↑'], ['WH_D', 'ホイール↓'], ['WH_L', 'ホイール←'], ['WH_R', 'ホイール→'], ['MS_U', 'カーソル↑'], ['MS_D', 'カーソル↓'], ['MS_L', 'カーソル←'], ['MS_R', 'カーソル→']]
+      .map(([v, t]) => [v, v, t, '']));
+    group('その他', [
+      ['BOOT', 'ブートローダーに入る', 'ファームウェアを書き込むモードに入ります。押すとキーボードは一時的に使えなくなり、RPI-RP2 ドライブとして見えるようになります。'],
+      ['REBOOT', '再起動', 'キーボードを再起動します。設定は消えません。'],
+      ['DM_REC1', 'その場マクロ1 記録開始', '押したあとのキー操作を記録します。「記録停止」で終わります。電源を切ると消える、一時的なマクロです。'],
+      ['DM_REC2', 'その場マクロ2 記録開始', '2つ目の一時的なマクロの記録を始めます。'],
+      ['DM_RSTP', 'その場マクロ 記録停止', 'その場マクロの記録を終わります。'],
+      ['DM_PLY1', 'その場マクロ1 再生', '記録した1つ目の一時的なマクロを再生します。'],
+      ['DM_PLY2', 'その場マクロ2 再生', '記録した2つ目の一時的なマクロを再生します。'],
+      ['CW_TOGG', 'Caps Word', '次の1単語だけ大文字で入力します。スペースなどを打つと自動で解除されます。'],
+      ['GESC', 'Esc（Shift/GUI で `）', '普段は Esc、Shift か GUI を押しながらだと ` を送ります。'],
+      ['OSM(LSFT)', '次の1打だけ Shift', '押して離したあと、次に打つ1キーにだけ Shift が効きます。'],
+      ['OSM(LCTL)', '次の1打だけ Ctrl', '押して離したあと、次に打つ1キーにだけ Ctrl が効きます。'],
+    ].map(([v, t, d]) => [v, v, t, d]));
     if (K.layer >= D.layers) K.layer = 0;
     if (K.sel >= kKeys().length) K.sel = 0;
     keysRender(); keysShowSel();
@@ -1773,7 +1807,18 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   });
   $('kPlain').addEventListener('click', () => { const tap = keysTapPart(); if (tap !== null) keysAssign(tap, true); });
   $('kOpSet').addEventListener('click', () => keysAssign(0x5200 + Number($('kOp').value) * 32 + Number($('kOpLayer').value)));
-  $('kSpecialSet').addEventListener('click', () => keysAssignText($('kSpecial').value));
+  function keysMenu(open) {
+    const menu = $('kSpecialMenu');
+    menu.hidden = !open; tipHide(document);
+    if (!open) return;
+    /* 下に入りきらないときは上に開く */
+    const r = $('kSpecialBtn').getBoundingClientRect();
+    menu.classList.toggle('up', r.bottom + 350 > window.innerHeight && r.top > 350);
+    menu.scrollTop = 0;
+  }
+  $('kSpecialBtn').addEventListener('click', e => { e.stopPropagation(); keysMenu($('kSpecialMenu').hidden); });
+  document.addEventListener('click', e => { if (!$('kSpecialMenu').hidden && !$('kSpecialMenu').contains(e.target)) keysMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('kSpecialMenu').hidden && !st.capturing) keysMenu(false); });
   /* 仮想キーボードからの割り当て */
   function keysVk(name) {
     if (MOD_ORDER.includes(name) && $('kHold').checked) { if (vkLatched.has(name)) vkLatched.delete(name); else vkLatched.add(name); vkSync(); return; }
