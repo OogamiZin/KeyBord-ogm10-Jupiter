@@ -4,13 +4,17 @@
 
 ブラウザだけで動く、ogm10-Jupiter 用の設定ツールです。Vial 対応ファームウェアのキーボードに WebHID でつなぎ、マクロとキー割り当てを編集します。ファームウェアの書き換えなしで、変更はすぐキーボードに保存されます。
 
+**https://oogamizin.github.io/KeyBord-ogm10-Jupiter/**
+
 ## 使い方
 
-1. [`index.html`](index.html) をダウンロードし、パソコンの Chrome か Edge で開きます（Safari と Firefox は WebHID に対応していないため使えません）。
+1. パソコンの Chrome か Edge で https://oogamizin.github.io/KeyBord-ogm10-Jupiter/ を開きます（Safari と Firefox は WebHID に対応していないため使えません）。
 2. 「キーボードに接続」を押し、一覧から ogm10-Jupiter を選びます。
 3. 上部のボタンで「マクロ編集」「キー割り当て」「レイヤー表示」を切り替えます。
 
 キーボードが手元にないときは「デモで試す」で画面の動きを確認できます。
+
+ネットにつながらない場所で使うときは、[`index.html`](index.html) をダウンロードして、そのファイルを Chrome か Edge で開いてください。1 ファイルだけで動きます。
 
 ## できること
 
@@ -37,6 +41,10 @@
 - 「小窓で表示」で、他のアプリの上に浮かせておけます。
 
 レイヤーへの追従には、レイヤー状態を通知するファームウェアが必要です（[ファームウェアの説明](../qmk_firmware/keyboards/ogm10_jupiter/readme.md#レイヤー状態の通知表示ツール向け)）。古いファームウェアでは、レイヤー番号をクリックして手動で切り替えます。
+
+## このフォルダについて
+
+`docs/` の中身が、そのまま GitHub Pages で公開されます（main ブランチの `/docs` を公開元に設定）。`index.html` を更新して main に入れると、数分で公開ページにも反映されます。
 
 ## 制約
 

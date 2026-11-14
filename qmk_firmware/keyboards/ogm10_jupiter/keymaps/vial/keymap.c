@@ -569,7 +569,7 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-// ---- 設定ツール（config-tool/index.html）のレイヤー表示向け: 現在のレイヤー状態を Raw HID で知らせる ----
+// ---- 設定ツール（docs/index.html）のレイヤー表示向け: 現在のレイヤー状態を Raw HID で知らせる ----
 // VIA / Vial が使っていない先頭バイト 0xF7 を、このキーボード専用のコマンドとして使う。
 //   PC -> キーボード: [0xF7, 0x01]            現在の状態を返す。同時に、以後 3 秒間の「変化通知」を申し込む
 //   キーボード -> PC: [0xF7, 0x01, 1, 最上位レイヤー, layer_state(4バイト LE), default_layer_state(4バイト LE), OS別デフォルトレイヤー]
