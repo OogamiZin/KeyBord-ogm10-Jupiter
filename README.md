@@ -23,6 +23,7 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 | 基板：USB ハブの仕様、実装部品の一覧、JLCPCB 発注時の注意、ピンアサイン | [pcb/README.md](pcb/README.md) |
 | ファームウェア：書き込み方法、ビルド、Vial | [qmk_firmware/keyboards/ogm10_jupiter/readme.md](qmk_firmware/keyboards/ogm10_jupiter/readme.md) |
 | ノブ：選び方、ファイル一覧、印刷のコツ | [knob/README.md](knob/README.md) |
+| 設定ツール：ブラウザでのマクロ編集、キー割り当て、レイヤー表示 | [config-tool/README.md](config-tool/README.md) |
 
 ## 自分で用意するもの
 

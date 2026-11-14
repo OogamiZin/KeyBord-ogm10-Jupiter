@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ogm10-Jupiter 設定ツール</title>
+<style>
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #1c2330; --sub: #5d6878; --line: #d8dde5;
+  --accent: #2f6fde; --accent-ink: #ffffff; --warn: #b3261e; --warn-bg: #fdecea;
+  --ok: #1d7a46; --chip: #e9eef8; --chip-key: #fff3d6; --chip-wait: #e6f4ea; --dirty: #d98200;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK JP", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --panel: #1d2128; --ink: #e6e9ee; --sub: #9aa4b2; --line: #333a45;
+    --accent: #5b93f5; --accent-ink: #0d1117; --warn: #ff8a80; --warn-bg: #3a1f1d;
+    --ok: #6fd29a; --chip: #283248; --chip-key: #46391a; --chip-wait: #1f3a2a; --dirty: #f0b04a;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.6 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+h1 { font-size: 16px; margin: 0; font-weight: 650; }
+h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+h2 { font-size: 14px; margin: 0; }
+.conn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+#status { color: var(--sub); font-size: 13px; }
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.on { background: var(--dirty); border-color: var(--dirty); color: #000; }
+input[type=text], input[type=number] { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+#banner { margin: 12px 16px 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
+#intro { max-width: 760px; margin: 28px auto; padding: 0 16px; color: var(--sub); }
+#intro p { margin: 0 0 10px; }
+main { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; padding: 12px 16px 96px; }
+#list { display: flex; flex-direction: column; gap: 4px; }
+.item { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 6px; text-align: left; padding: 6px 8px; }
+.item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.item .id { font-family: var(--mono); font-weight: 600; }
+.item .pv { color: var(--sub); font-family: var(--mono); font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.item .sz { color: var(--sub); font-size: 11px; white-space: nowrap; }
+.item .dot { color: var(--dirty); }
+.item.err .sz { color: var(--warn); font-weight: 600; }
+#editor { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
+.row .grow { flex: 1; }
+.group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 8px; border: 1px dashed var(--line); border-radius: 8px; }
+.group label { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; }
+.group .cap { color: var(--sub); font-size: 12px; }
+#keyName { width: 120px; }
+#waitMs { width: 76px; }
+textarea { display: block; width: 100%; min-height: 220px; resize: vertical; font: 14px/1.5 var(--mono); tab-size: 4; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; white-space: pre; overflow: auto; }
+textarea:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#errors { margin: 8px 0 0; padding: 0; list-style: none; }
+#errors li { color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 4px 8px; margin-bottom: 4px; cursor: pointer; }
+#preview { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.chip { font: 12px/1.5 var(--mono); padding: 1px 7px; border-radius: 5px; background: var(--chip); white-space: pre-wrap; word-break: break-all; }
+.chip.key { background: var(--chip-key); }
+.chip.wait { background: var(--chip-wait); }
+.chip.hold { outline: 1px solid var(--dirty); }
+.hint { color: var(--sub); font-size: 12px; margin: 6px 0 0; }
+details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+summary { cursor: pointer; font-weight: 600; }
+table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: left; vertical-align: top; }
+td code, p code { font-family: var(--mono); background: var(--chip); padding: 0 4px; border-radius: 4px; }
+footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; background: var(--panel); border-top: 1px solid var(--line); }
+.barrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+#vk { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.vkhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: 900px; margin: 0 auto 6px; font-size: 13px; }
+.vkhead label { display: inline-flex; align-items: center; gap: 3px; }
+.vkhead .cap { color: var(--sub); font-size: 12px; }
+.vkscroll { overflow-x: auto; }
+#vkKeys { display: flex; gap: 12px; width: 900px; margin: 0 auto; }
+.vkblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vkrow { display: flex; gap: 3px; height: 28px; }
+.vkey { flex: 1 1 0; min-width: 0; height: 28px; padding: 0 2px; border-radius: 5px; font-size: 11px; line-height: 1; overflow: hidden; white-space: nowrap; background: var(--bg); }
+.vkey.mod { background: var(--chip); }
+.vkey.on { background: var(--dirty); border-color: var(--dirty); color: #000; }
+.vkgap { flex: 1 1 0; min-width: 0; }
+#meter { flex: 1; min-width: 180px; }
+#meter .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+#meter .fill { height: 100%; width: 0; background: var(--accent); }
+#meter.over .fill { background: var(--warn); }
+#meter .txt { font-size: 12px; color: var(--sub); }
+#toast { font-size: 13px; }
+#toast.ok { color: var(--ok); } #toast.ng { color: var(--warn); }
+dialog { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; max-width: 420px; }
+dialog::backdrop { background: rgba(0, 0, 0, .45); }
+progress { width: 100%; height: 12px; }
+#modes { display: flex; gap: 4px; }
+#modes button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+#disp { padding: 12px 16px 24px; }
+#dispBody { max-width: 1100px; margin: 0 auto; }
+body.pip { padding: 8px; }
+body.pip #dispBody { max-width: none; }
+body.pip .nopip { display: none; }
+.dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; }
+#dLayer { font-size: 22px; font-weight: 700; min-width: 5.5em; }
+#dChips { display: flex; flex-wrap: wrap; gap: 4px; }
+.lchip { min-width: 34px; padding: 3px 8px; font-family: var(--mono); }
+.lchip.def { border-style: double; border-width: 3px; }
+.lchip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.lchip.pin { outline: 2px solid var(--dirty); outline-offset: 1px; }
+.board { position: relative; width: 100%; container-type: inline-size; }
+#keys { padding: 12px 16px 32px; }
+#keysBody { max-width: 940px; margin: 0 auto; }
+#kboard .k { cursor: pointer; }
+.k.sel > div { outline: .32cqw solid var(--accent); outline-offset: -.1cqw; }
+.k.chg > div { border-color: var(--dirty); box-shadow: inset 0 0 0 .18cqw var(--dirty); }
+.lchip.chg::after { content: ' ●'; color: var(--dirty); }
+#kedit { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+#kText { flex: 1; min-width: 200px; font-family: var(--mono); }
+select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 260px; }
+#kToast { font-size: 13px; } #kToast.ok { color: var(--ok); } #kToast.ng { color: var(--warn); }
+#kvk #vk { margin: 4px 0 0; padding: 0; border: 0; }
+#kvk .vkhead { display: none; }
+#kLayerText { min-height: 130px; margin-top: 8px; }
+.k { position: absolute; padding: .28cqw; }
+.k .t { position: absolute; top: .45cqw; left: .7cqw; font-size: 1.3cqw; font-weight: 650; line-height: 1; color: var(--accent); }
+.k > div { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1cqw; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: .7cqw; text-align: center; line-height: 1.15; }
+.k .m { font-size: 1.75cqw; font-weight: 650; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: clip; }
+.k .m.long { font-size: 1.25cqw; }
+.k .s { font-size: 1.05cqw; color: var(--sub); white-space: nowrap; max-width: 100%; overflow: hidden; }
+.k.low > div { opacity: .5; }
+.k.none > div { background: transparent; border-style: dashed; }
+.k.layer > div { background: var(--chip); border-color: var(--accent); }
+.k.macro > div, .k.custom > div { background: var(--chip-key); }
+.k.enc > div { border-radius: 50%; }
+#legend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
+#legend dt { font-family: var(--mono); font-weight: 650; padding: 0 8px; border-radius: 5px; background: var(--chip-key); align-self: start; white-space: nowrap; }
+#legend dd { margin: 0; }
+#legend dd { overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+@media (max-width: 720px) {
+  main { grid-template-columns: 1fr; padding-bottom: 170px; }
+  #list { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+  .item { grid-template-columns: auto auto; min-width: 92px; }
+  .item .pv { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ogm10-Jupiter 設定ツール<small>試作</small></h1>
+  <nav id="modes" hidden>
+    <button id="tabMacro" class="on">マクロ編集</button>
+    <button id="tabKeys">キー割り当て</button>
+    <button id="tabDisp">レイヤー表示</button>
+  </nav>
+  <div class="conn">
+    <span id="status">未接続</span>
+    <button id="btnConnect" class="primary">キーボードに接続</button>
+    <button id="btnDemo">デモで試す</button>
+  </div>
+</header>
+<div id="banner" hidden></div>
+
+<div id="intro">
+  <p>Vial 対応ファームのキーボードに WebHID で接続し、マクロ（M0〜）を編集します。ファームの書き換えは不要です。</p>
+  <p>マクロはテキストで書きます。文章やコードはそのまま貼り付けられ、キー操作は <code>{LCTL+C}</code> のように波かっこで書きます。</p>
+  <p>キーボードが手元にない場合は「デモで試す」で画面と変換の動きを確認できます。</p>
+</div>
+
+<main id="app" hidden>
+  <aside id="list" aria-label="マクロ一覧"></aside>
+  <section id="editor">
+    <div class="row">
+      <h2 id="edTitle">M0</h2>
+      <span class="grow"></span>
+      <span id="edSize" class="hint"></span>
+      <button id="btnClear">このマクロを空にする</button>
+    </div>
+    <div class="row">
+      <div class="group">
+        <span class="cap">組み合わせ</span>
+        <label><input type="checkbox" id="mCtl">Ctrl</label>
+        <label><input type="checkbox" id="mSft">Shift</label>
+        <label><input type="checkbox" id="mAlt">Alt</label>
+        <label><input type="checkbox" id="mGui">GUI</label>
+        <input type="text" id="keyName" list="keyList" placeholder="キー名 例: C" autocomplete="off">
+        <datalist id="keyList"></datalist>
+        <button id="btnInsKey">挿入</button>
+        <button id="btnInsDown" title="押したままにする">押す</button>
+        <button id="btnInsUp" title="離す">離す</button>
+      </div>
+      <button id="btnCapture" title="実際にキーを押して、その組み合わせを書き込みます">キー入力を取り込む</button>
+      <div class="group">
+        <span class="cap">待機</span>
+        <input type="number" id="waitMs" min="0" max="65024" value="100"><span class="cap">ms</span>
+        <button id="btnInsWait">挿入</button>
+      </div>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="optEscape" checked> 貼り付けた内容の { } を文字として扱う</label>
+      <label><input type="checkbox" id="optEnter" checked> 貼り付けた内容の改行を {ENTER} にする</label>
+      <label><input type="checkbox" id="optIndent"> 貼り付け時に行頭の空白を除く</label>
+    </div>
+    <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="ここに入力、または貼り付け。エディタ内の改行は送られません。Enter は {ENTER} と書きます。"></textarea>
+    <ul id="errors"></ul>
+    <div id="preview" aria-label="送信内容のプレビュー"></div>
+    <p class="hint">プレビューは実際に送られる順番です。黄色がキー操作、緑が待機、枠付きは押したままの操作です。</p>
+
+    <details>
+      <summary>書き方</summary>
+      <table>
+        <tr><th>書き方</th><th>動作</th></tr>
+        <tr><td>そのままの文字</td><td>その文字を入力します（半角英数字と記号のみ）。タブは Tab になります。</td></tr>
+        <tr><td>エディタ内の改行</td><td>見た目を整えるだけで、送られません。Enter を送るには <code>{ENTER}</code> と書きます。</td></tr>
+        <tr><td><code>{ENTER}</code> <code>{F5}</code></td><td>キーを1回押します。<code>KC_</code> を付けた名前も使えます。</td></tr>
+        <tr><td><code>{LCTL+C}</code> <code>{LCTL+LSFT+K}</code></td><td>修飾キーとの組み合わせを押します。</td></tr>
+        <tr><td><code>{TAB*3}</code></td><td>同じ操作を繰り返します。</td></tr>
+        <tr><td><code>{+LSFT}</code> … <code>{-LSFT}</code></td><td>キーを押したままにし、あとで離します。</td></tr>
+        <tr><td><code>{WAIT:200}</code></td><td>200ミリ秒待ちます（最大 65024）。</td></tr>
+        <tr><td><code>{0x7C16}</code></td><td>キーコードを16進数で直接指定します。</td></tr>
+        <tr><td><code>{{</code> <code>}}</code></td><td>波かっこ自体を文字として入力します。</td></tr>
+      </table>
+      <p class="hint">修飾キー名: LCTL LSFT LALT LGUI / RCTL RSFT RALT RGUI（CTRL SHIFT ALT GUI CMD WIN も可）。記号キーの文字は OS のキーボード配列設定で決まります。日本語などの全角文字はマクロでは送れません。</p>
+    </details>
+  </section>
+</main>
+
+<section id="keys" hidden>
+  <div id="keysBody">
+    <div class="dhead">
+      <strong>レイヤー</strong>
+      <div id="kTabs" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      <span id="kStatus" class="hint"></span>
+      <span class="grow"></span>
+      <span id="kToast"></span>
+      <button id="kReload">読み直す</button>
+      <button id="kSave" class="primary">キーボードに書き込む</button>
+    </div>
+    <div id="kboard" class="board"></div>
+    <div id="kedit">
+      <div class="row">
+        <strong id="kSel">キーを選んでください</strong>
+        <input type="text" id="kText" autocomplete="off" spellcheck="false" placeholder="例: LCTL+LSFT+K ／ LT(2,LBRC) ／ MO(1) ／ M0 ／ LCTL(KC_C)">
+        <button id="kApply" class="primary">設定</button>
+      </div>
+      <div class="row">
+        <button id="kTrns" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
+        <button id="kNo" title="何も送らない">✕ 無効</button>
+        <button id="kRevert">このキーを元に戻す</button>
+        <button id="kCapture" title="実際にキーを押して、その組み合わせを割り当てます">キー入力を取り込む</button>
+        <label><input type="checkbox" id="kAdvance" checked> 設定したら次のキーへ進む</label>
+      </div>
+      <div class="row">
+        <div class="group"><span class="cap">長押しでレイヤー</span><select id="kLtLayer"></select><button id="kLt">足す</button></div>
+        <div class="group"><span class="cap">長押しで修飾</span>
+          <label><input type="checkbox" id="kmCtl">Ctrl</label><label><input type="checkbox" id="kmSft">Shift</label>
+          <label><input type="checkbox" id="kmAlt">Alt</label><label><input type="checkbox" id="kmGui">GUI</label>
+          <button id="kMt">足す</button></div>
+        <button id="kPlain" title="長押しの設定を外して、タップ側のキーだけにする">長押しを外す</button>
+      </div>
+      <div class="row">
+        <div class="group"><span class="cap">レイヤー操作</span><select id="kOp">
+          <option value="1">押している間だけ（MO）</option><option value="3">押すたびに切り替え（TG）</option><option value="0">そのレイヤーへ移動（TO）</option>
+          <option value="2">基本レイヤーにする（DF）</option><option value="4">次の1打だけ（OSL）</option><option value="6">長押しで一時・連打で切り替え（TT）</option>
+        </select><select id="kOpLayer"></select><button id="kOpSet">設定</button></div>
+        <div class="group"><span class="cap">マクロ・専用キー・その他</span><select id="kSpecial"></select><button id="kSpecialSet">設定</button></div>
+      </div>
+      <p class="hint">下の仮想キーボードをクリックしても割り当てられます。Ctrl・Shift などを先にクリックしてから他のキーを押すと、組み合わせ（例: LCTL+LSFT+K）になります。
+        <label><input type="checkbox" id="kHold" checked> 修飾キーは組み合わせ用に保持する（外すと、修飾キー単体を割り当て）</label></p>
+      <div id="kvk"></div>
+      <details id="kTextBox">
+        <summary>レイヤーをテキストで編集・貼り付け</summary>
+        <p class="hint">表示中のレイヤー全体を文字で編集できます。別のレイヤーの内容や、keymap.c の <code>[0] = LAYOUT( … )</code> をそのまま貼り付けて「レイヤーに反映」を押してください。キーの並びは行・列の順です。</p>
+        <div class="row">
+          <button id="kTextShow">今の内容を表示</button>
+          <button id="kTextApply" class="primary">レイヤーに反映</button>
+          <span class="grow"></span>
+          <button id="kVilPick">Vial の保存ファイル（.vil）を読み込む</button>
+          <input type="file" id="kVilFile" accept=".vil,application/json" hidden>
+          <select id="kVilLayer" hidden></select>
+          <button id="kVilUse" hidden>このレイヤーを下の欄に入れる</button>
+        </div>
+        <textarea id="kLayerText" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="disp" hidden>
+  <div id="dispBody">
+    <div class="dhead">
+      <div id="dLayer">レイヤー -</div>
+      <div id="dChips"></div>
+      <span id="dStatus" class="hint"></span>
+      <span class="grow"></span>
+      <button id="btnPip" class="nopip" hidden>小窓で表示</button>
+      <button id="btnKeymap" class="nopip">割り当てを読み直す</button>
+    </div>
+    <div id="board" class="board"></div>
+    <dl id="legend" hidden></dl>
+    <p class="hint nopip">キーの左上の青い文字は、Shift を押しながら打つと出る文字です（JIS 配列）。薄い表示は、下のレイヤーの割り当てがそのまま効いているキーです。丸いキーはエンコーダーの回転（↺ 反時計回り、↻ 時計回り）です。</p>
+  </div>
+</section>
+
+<footer id="bar" hidden>
+  <div id="vk">
+    <div class="vkhead">
+      <span class="cap">クリックしたキーを</span>
+      <label><input type="radio" name="vkMode" value="tap" checked>1回押す</label>
+      <label><input type="radio" name="vkMode" value="down">押したままにする</label>
+      <label><input type="radio" name="vkMode" value="up">離す</label>
+      <span class="cap" id="vkHint">Ctrl・Shift などを先にクリックすると、次のキーとの組み合わせになります。</span>
+    </div>
+    <div class="vkscroll"><div id="vkKeys"></div></div>
+  </div>
+  <div class="barrow">
+  <div id="meter"><div class="bar"><div class="fill"></div></div><div class="txt"></div></div>
+  <span id="toast"></span>
+  <button id="btnVk">仮想キーボードを隠す</button>
+  <button id="btnExport">バックアップ保存</button>
+  <button id="btnImport">バックアップ読込</button>
+  <input type="file" id="fileImport" accept="application/json,.json" hidden>
+  <button id="btnReload">読み直す</button>
+  <button id="btnSave" class="primary">キーボードに書き込む</button>
+  </div>
+</footer>
+
+<dialog id="dlgUnlock">
+  <h2>キーボードのロックを解除</h2>
+  <p>マクロの書き込みにはロック解除が必要です。解除用のキーを、バーが満タンになるまで押し続けてください。</p>
+  <p id="unlockKeys" class="hint"></p>
+  <progress id="unlockBar" max="1" value="0"></progress>
+  <p class="hint">中止する場合はケーブルを抜き差ししてください。</p>
+</dialog>
+
+<script id="core">
+/* 通信と変換（画面に依存しない部分） */
+const JupiterCore = (() => {
+  'use strict';
+
+  /* ---- キー定義 ---- */
+  const KEYS = [];
+  const byName = new Map();
+  const byCode = new Map();
+  function def(code, name, aliases, jis) {
+    const k = { code, name, jis: jis || '' };
+    KEYS.push(k); byCode.set(code, k); byName.set(name, k);
+    (aliases || []).forEach(a => byName.set(a, k));
+  }
+  for (let i = 0; i < 26; i++) def(0x04 + i, String.fromCharCode(65 + i));
+  '1234567890'.split('').forEach((c, i) => def(0x1E + i, c));
+  [
+    [0x28, 'ENTER', ['ENT', 'RETURN', 'RET']], [0x29, 'ESC', ['ESCAPE']], [0x2A, 'BSPC', ['BACKSPACE', 'BSPACE', 'BS']],
+    [0x2B, 'TAB'], [0x2C, 'SPACE', ['SPC']],
+    [0x2D, 'MINS', ['MINUS'], '-'], [0x2E, 'EQL', ['EQUAL'], '^'], [0x2F, 'LBRC', ['LEFT_BRACKET', 'LBRACKET'], '@'],
+    [0x30, 'RBRC', ['RIGHT_BRACKET', 'RBRACKET'], '['], [0x31, 'BSLS', ['BACKSLASH', 'BSLASH'], ']'], [0x32, 'NUHS', ['NONUS_HASH'], ']'],
+    [0x33, 'SCLN', ['SEMICOLON', 'SCOLON'], ';'], [0x34, 'QUOT', ['QUOTE'], ':'], [0x35, 'GRV', ['GRAVE', 'ZKHK'], '半角/全角'],
+    [0x36, 'COMM', ['COMMA'], ','], [0x37, 'DOT', [], '.'], [0x38, 'SLSH', ['SLASH'], '/'],
+    [0x39, 'CAPS', ['CAPS_LOCK', 'CAPSLOCK']],
+    [0x46, 'PSCR', ['PRINT_SCREEN', 'PSCREEN']], [0x47, 'SCRL', ['SCROLL_LOCK', 'SCROLLLOCK']], [0x48, 'PAUS', ['PAUSE', 'BRK']],
+    [0x49, 'INS', ['INSERT']], [0x4A, 'HOME'], [0x4B, 'PGUP', ['PAGE_UP']], [0x4C, 'DEL', ['DELETE']],
+    [0x4D, 'END'], [0x4E, 'PGDN', ['PAGE_DOWN', 'PGDOWN']],
+    [0x4F, 'RIGHT', ['RGHT'], '→'], [0x50, 'LEFT', [], '←'], [0x51, 'DOWN', [], '↓'], [0x52, 'UP', [], '↑'],
+    [0x53, 'NUM', ['NUM_LOCK', 'NUMLOCK', 'NLCK']], [0x54, 'PSLS', ['KP_SLASH']], [0x55, 'PAST', ['KP_ASTERISK']],
+    [0x56, 'PMNS', ['KP_MINUS']], [0x57, 'PPLS', ['KP_PLUS']], [0x58, 'PENT', ['KP_ENTER']],
+    [0x59, 'P1', ['KP_1']], [0x5A, 'P2', ['KP_2']], [0x5B, 'P3', ['KP_3']], [0x5C, 'P4', ['KP_4']], [0x5D, 'P5', ['KP_5']],
+    [0x5E, 'P6', ['KP_6']], [0x5F, 'P7', ['KP_7']], [0x60, 'P8', ['KP_8']], [0x61, 'P9', ['KP_9']], [0x62, 'P0', ['KP_0']],
+    [0x63, 'PDOT', ['KP_DOT']], [0x64, 'NUBS', ['NONUS_BACKSLASH', 'NONUS_BSLASH']], [0x65, 'APP', ['APPLICATION', 'MENU']], [0x67, 'PEQL', ['KP_EQUAL']],
+    [0x74, 'EXEC', ['EXECUTE']], [0x75, 'HELP'], [0x77, 'SLCT', ['SELECT']], [0x78, 'STOP'], [0x79, 'AGIN', ['AGAIN']], [0x7A, 'UNDO'],
+    [0x7B, 'CUT'], [0x7C, 'COPY'], [0x7D, 'PSTE', ['PASTE']], [0x7E, 'FIND'], [0x80, '_VOLUP'], [0x81, '_VOLDOWN'],
+    [0x82, 'LCAP', ['LOCKING_CAPS_LOCK']], [0x83, 'LNUM', ['LOCKING_NUM_LOCK']], [0x84, 'LSCR', ['LOCKING_SCROLL_LOCK']], [0x85, 'PCMM', ['KP_COMMA']],
+    [0x87, 'INT1', ['INTERNATIONAL_1', 'RO'], 'ろ \\ _'], [0x88, 'INT2', ['INTERNATIONAL_2', 'KANA'], 'かな'],
+    [0x89, 'INT3', ['INTERNATIONAL_3', 'JYEN', 'YEN'], '¥ |'], [0x8A, 'INT4', ['INTERNATIONAL_4', 'HENK'], '変換'],
+    [0x8B, 'INT5', ['INTERNATIONAL_5', 'MHEN'], '無変換'],
+    [0x90, 'LNG1', ['LANG1', 'LANGUAGE_1'], 'かな(Mac)'], [0x91, 'LNG2', ['LANG2', 'LANGUAGE_2'], '英数(Mac)'],
+    [0xA5, 'PWR', ['SYSTEM_POWER']], [0xA6, 'SLEP', ['SYSTEM_SLEEP']], [0xA7, 'WAKE', ['SYSTEM_WAKE']],
+    [0xA8, 'MUTE', ['AUDIO_MUTE']], [0xA9, 'VOLU', ['AUDIO_VOL_UP']], [0xAA, 'VOLD', ['AUDIO_VOL_DOWN']],
+    [0xAB, 'MNXT', ['MEDIA_NEXT_TRACK']], [0xAC, 'MPRV', ['MEDIA_PREV_TRACK']], [0xAD, 'MSTP', ['MEDIA_STOP']],
+    [0xAE, 'MPLY', ['MEDIA_PLAY_PAUSE']], [0xAF, 'MSEL', ['MEDIA_SELECT']], [0xB0, 'EJCT', ['MEDIA_EJECT']],
+    [0xB1, 'MAIL'], [0xB2, 'CALC', ['CALCULATOR']], [0xB3, 'MYCM', ['MY_COMPUTER']],
+    [0xB4, 'WSCH', ['WWW_SEARCH']], [0xB5, 'WHOM', ['WWW_HOME']], [0xB6, 'WBAK', ['WWW_BACK']],
+    [0xB7, 'WFWD', ['WWW_FORWARD']], [0xB8, 'WSTP', ['WWW_STOP']], [0xB9, 'WREF', ['WWW_REFRESH']],
+    [0xBA, 'WFAV', ['WWW_FAVORITES']], [0xBB, 'MFFD', ['MEDIA_FAST_FORWARD']], [0xBC, 'MRWD', ['MEDIA_REWIND']],
+    [0xBD, 'BRIU', ['BRIGHTNESS_UP']], [0xBE, 'BRID', ['BRIGHTNESS_DOWN']],
+    [0xCD, 'MS_U', ['MS_UP']], [0xCE, 'MS_D', ['MS_DOWN']], [0xCF, 'MS_L', ['MS_LEFT']], [0xD0, 'MS_R', ['MS_RIGHT']],
+    [0xD1, 'BTN1', ['MS_BTN1']], [0xD2, 'BTN2', ['MS_BTN2']], [0xD3, 'BTN3', ['MS_BTN3']], [0xD4, 'BTN4', ['MS_BTN4']], [0xD5, 'BTN5', ['MS_BTN5']],
+    [0xD9, 'WH_U', ['MS_WH_UP']], [0xDA, 'WH_D', ['MS_WH_DOWN']], [0xDB, 'WH_L', ['MS_WH_LEFT']], [0xDC, 'WH_R', ['MS_WH_RIGHT']],
+    [0xDD, 'ACL0', ['MS_ACCEL0']], [0xDE, 'ACL1', ['MS_ACCEL1']], [0xDF, 'ACL2', ['MS_ACCEL2']],
+    [0xE0, 'LCTL', ['LCTRL', 'LEFT_CTRL', 'CTRL', 'CTL', 'CONTROL']],
+    [0xE1, 'LSFT', ['LSHIFT', 'LEFT_SHIFT', 'SHIFT', 'SFT']],
+    [0xE2, 'LALT', ['LEFT_ALT', 'ALT', 'LOPT', 'OPT', 'OPTION']],
+    [0xE3, 'LGUI', ['LEFT_GUI', 'GUI', 'LCMD', 'CMD', 'COMMAND', 'LWIN', 'WIN']],
+    [0xE4, 'RCTL', ['RCTRL', 'RIGHT_CTRL']], [0xE5, 'RSFT', ['RSHIFT', 'RIGHT_SHIFT']],
+    [0xE6, 'RALT', ['RIGHT_ALT', 'ROPT', 'ALGR']], [0xE7, 'RGUI', ['RIGHT_GUI', 'RCMD', 'RWIN']],
+  ].forEach(([c, n, a, j]) => def(c, n, a, j));
+  for (let i = 1; i <= 12; i++) def(0x39 + i, 'F' + i);
+  for (let i = 13; i <= 24; i++) def(0x68 + i - 13, 'F' + i);
+
+  const isMod = c => c >= 0xE0 && c <= 0xE7;
+  const MAX_WAIT = 65024;
+
+  function keyName(code) { const k = byCode.get(code); return k ? k.name : null; }
+  function hex(n, w) { return '0x' + n.toString(16).toUpperCase().padStart(w, '0'); }
+
+  /* 名前または16進数 → キーコード。分からなければ null */
+  function resolveKey(s) {
+    let t = String(s).trim().toUpperCase();
+    if (/^0X[0-9A-F]{1,4}$/.test(t)) return parseInt(t.slice(2), 16);
+    if (t.startsWith('KC_')) t = t.slice(3);
+    const k = byName.get(t);
+    return k ? k.code : null;
+  }
+
+  function checkCode(kc) {
+    if (!(kc >= 1 && kc <= 0xFF00)) throw new Error('キーコード ' + hex(kc, 4) + ' はマクロで使えません');
+    return kc;
+  }
+
+  /* { } の中身 → 操作の配列 */
+  function parseToken(inner) {
+    const t = inner.trim();
+    if (!t) throw new Error('{ } の中が空です');
+    let m = /^(?:WAIT|DELAY)\s*:\s*(\d+)$/i.exec(t);
+    if (m) {
+      const ms = Number(m[1]);
+      if (ms > MAX_WAIT) throw new Error('待機は最大 ' + MAX_WAIT + ' ms です');
+      return [{ t: 'wait', ms }];
+    }
+    if (t[0] === '+' || t[0] === '-') {
+      const kc = resolveKey(t.slice(1));
+      if (kc === null) throw new Error('キー名が分かりません: ' + t.slice(1).trim());
+      return [{ t: t[0] === '+' ? 'down' : 'up', kc: checkCode(kc) }];
+    }
+    let body = t, rep = 1;
+    m = /^(.*?)\s*\*\s*(\d+)$/.exec(t);
+    if (m) { body = m[1]; rep = Number(m[2]); if (rep < 1 || rep > 255) throw new Error('繰り返しは 1〜255 回です'); }
+    const parts = body.split('+').map(p => p.trim());
+    if (parts.some(p => !p)) throw new Error('「+」の前後にキー名が必要です');
+    const codes = parts.map(p => {
+      const kc = resolveKey(p);
+      if (kc === null) throw new Error('キー名が分かりません: ' + p);
+      return checkCode(kc);
+    });
+    let one;
+    if (codes.length === 1) {
+      one = [{ t: 'tap', kc: codes[0] }];
+    } else {
+      const mods = codes.slice(0, -1), last = codes[codes.length - 1];
+      if (!mods.every(isMod)) throw new Error('組み合わせは「修飾キー+…+キー」の順で書いてください');
+      const right = mods.map(c => c >= 0xE4);
+      const sameSide = right.every(r => r === right[0]);
+      if (last < 0x100 && !isMod(last) && sameSide) {
+        let bits = 0;
+        mods.forEach(c => { bits |= 1 << ((c - 0xE0) & 3); });
+        if (right[0]) bits |= 0x10;
+        one = [{ t: 'tap', kc: (bits << 8) | last }];
+      } else {
+        one = mods.map(c => ({ t: 'down', kc: c }));
+        if (isMod(last)) { one.push({ t: 'down', kc: last }); one.push({ t: 'up', kc: last }); }
+        else one.push({ t: 'tap', kc: last });
+        mods.slice().reverse().forEach(c => one.push({ t: 'up', kc: c }));
+      }
+    }
+    const out = [];
+    for (let i = 0; i < rep; i++) one.forEach(a => out.push(Object.assign({}, a)));
+    return out;
+  }
+
+  /* 編集用テキスト → { actions, errors[{pos,len,msg}] } */
+  function parse(src) {
+    const actions = [], errors = [];
+    let text = '';
+    const flush = () => { if (text) { actions.push({ t: 'text', s: text }); text = ''; } };
+    let i = 0;
+    while (i < src.length) {
+      const ch = src[i];
+      if (ch === '{') {
+        if (src[i + 1] === '{') { text += '{'; i += 2; continue; }
+        const end = src.indexOf('}', i + 1);
+        const nl = src.indexOf('\n', i + 1);
+        if (end < 0 || (nl >= 0 && nl < end)) { errors.push({ pos: i, len: 1, msg: '「{」が閉じられていません（文字として使うなら {{ ）' }); i++; continue; }
+        try { flush(); parseToken(src.slice(i + 1, end)).forEach(a => actions.push(a)); }
+        catch (e) { errors.push({ pos: i, len: end - i + 1, msg: e.message }); }
+        i = end + 1; continue;
+      }
+      if (ch === '}') {
+        if (src[i + 1] === '}') { text += '}'; i += 2; continue; }
+        errors.push({ pos: i, len: 1, msg: '「}」に対応する「{」がありません（文字として使うなら }} ）' }); i++; continue;
+      }
+      if (ch === '\r' || ch === '\n') { i++; continue; }  /* エディタ上の改行は見た目だけで、送信されない */
+      const c = ch.charCodeAt(0);
+      if (ch === '\t' || (c >= 0x20 && c <= 0x7E)) text += ch;
+      else errors.push({ pos: i, len: 1, msg: '「' + ch + '」は送れません（半角英数字と記号のみ）' });
+      i++;
+    }
+    flush();
+    return { actions, errors };
+  }
+
+  /* 操作の配列 → キーボードに保存するバイト列（Vial マクロ形式 v2） */
+  function serialize(actions) {
+    const out = [];
+    const code = (a, short, ext) => {
+      let kc = checkCode(a.kc);
+      if (kc < 0x100) { out.push(1, short, kc); return; }
+      if ((kc & 0xFF) === 0) kc = 0xFF00 | (kc >> 8);
+      out.push(1, ext, kc & 0xFF, kc >> 8);
+    };
+    for (const a of actions) {
+      if (a.t === 'text') { for (const ch of a.s) out.push(ch.charCodeAt(0)); }
+      else if (a.t === 'tap') code(a, 1, 5);
+      else if (a.t === 'down') code(a, 2, 6);
+      else if (a.t === 'up') code(a, 3, 7);
+      else if (a.t === 'wait') out.push(1, 4, (a.ms % 255) + 1, Math.floor(a.ms / 255) + 1);
+    }
+    return Uint8Array.from(out);
+  }
+
+  /* バイト列 → 操作の配列 */
+  function deserialize(data) {
+    const actions = [];
+    const pushText = ch => {
+      const last = actions[actions.length - 1];
+      if (last && last.t === 'text') last.s += ch; else actions.push({ t: 'text', s: ch });
+    };
+    let i = 0;
+    while (i < data.length) {
+      if (data[i] !== 1) { pushText(String.fromCharCode(data[i])); i++; continue; }
+      if (i + 1 >= data.length) break;
+      const act = data[i + 1];
+      if (act >= 1 && act <= 3) {
+        if (i + 2 >= data.length) break;
+        actions.push({ t: ['tap', 'down', 'up'][act - 1], kc: data[i + 2] }); i += 3;
+      } else if (act >= 5 && act <= 7) {
+        if (i + 3 >= data.length) break;
+        let kc = data[i + 2] | (data[i + 3] << 8);
+        if (kc > 0xFF00) kc = (kc & 0xFF) << 8;
+        actions.push({ t: ['tap', 'down', 'up'][act - 5], kc }); i += 4;
+      } else if (act === 4) {
+        if (i + 3 >= data.length) break;
+        actions.push({ t: 'wait', ms: (data[i + 2] - 1) + (data[i + 3] - 1) * 255 }); i += 4;
+      } else { i += 2; }
+    }
+    return actions;
+  }
+
+  /* キーコード → { } の中に書く名前 */
+  function codeToken(kc) {
+    if (kc < 0x100) return keyName(kc) || hex(kc, 2);
+    if (kc <= 0x1FFF && (kc & 0xFF) && !isMod(kc & 0xFF) && keyName(kc & 0xFF)) {
+      const bits = kc >> 8, side = (bits & 0x10) ? 'R' : 'L', names = [];
+      if (bits & 1) names.push(side + 'CTL');
+      if (bits & 2) names.push(side + 'SFT');
+      if (bits & 4) names.push(side + 'ALT');
+      if (bits & 8) names.push(side + 'GUI');
+      if (names.length) return names.join('+') + '+' + keyName(kc & 0xFF);
+    }
+    return hex(kc, 4);
+  }
+
+  /* 操作の配列 → 編集用テキスト */
+  function format(actions) {
+    let out = '';
+    for (let i = 0; i < actions.length; i++) {
+      const a = actions[i];
+      if (a.t === 'text') out += a.s.replace(/\r/g, '').replace(/\{/g, '{{').replace(/\}/g, '}}').replace(/\n/g, '{ENTER}\n');
+      else if (a.t === 'wait') out += '{WAIT:' + a.ms + '}';
+      else if (a.t === 'down') out += '{+' + codeToken(a.kc) + '}';
+      else if (a.t === 'up') out += '{-' + codeToken(a.kc) + '}';
+      else if (a.t === 'tap') {
+        let n = 1;
+        while (i + 1 < actions.length && actions[i + 1].t === 'tap' && actions[i + 1].kc === a.kc && n < 255) { n++; i++; }
+        out += '{' + codeToken(a.kc) + (n > 1 ? '*' + n : '') + '}';
+        if (a.kc === 0x28) out += '\n';  /* 読みやすさのための改行（送信されない） */
+      }
+    }
+    return out.replace(/\n+$/, '');
+  }
+
+  /* テキスト → { bytes, actions, errors } */
+  function compile(src) {
+    const r = parse(src);
+    let bytes = new Uint8Array(0);
+    try { bytes = serialize(r.actions); } catch (e) { r.errors.push({ pos: 0, len: 0, msg: e.message }); }
+    return { bytes, actions: r.actions, errors: r.errors };
+  }
+
+  function splitMacros(buf, count) {
+    const out = [];
+    let s = 0;
+    for (let i = 0; i < buf.length && out.length < count; i++) {
+      if (buf[i] === 0) { out.push(buf.slice(s, i)); s = i + 1; }
+    }
+    while (out.length < count) out.push(new Uint8Array(0));
+    return out;
+  }
+  function joinMacros(list) {
+    const total = list.reduce((n, b) => n + b.length + 1, 0);
+    const out = new Uint8Array(total);
+    let p = 0;
+    for (const b of list) { out.set(b, p); p += b.length + 1; }
+    return out;
+  }
+
+  /* ---- キーコードの表示名（レイヤー表示用） ---- */
+  const NICE = {
+    ENTER: 'Enter', ESC: 'Esc', BSPC: 'BS', TAB: 'Tab', SPACE: 'Space', CAPS: 'Caps', GRV: '半/全',
+    INT1: 'ろ', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', LNG1: 'かな', LNG2: '英数',
+    LCTL: 'Ctrl', LSFT: 'Shift', LALT: 'Alt', LGUI: 'GUI', RCTL: 'RCtrl', RSFT: 'RShift', RALT: 'RAlt', RGUI: 'RGUI',
+    PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
+    APP: 'App', MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲', MSTP: '停止',
+    BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', PWR: '電源', SLEP: 'スリープ',
+    MS_U: 'マウス↑', MS_D: 'マウス↓', MS_L: 'マウス←', MS_R: 'マウス→',
+    BTN1: '左クリック', BTN2: '右クリック', BTN3: '中クリック', BTN4: 'ボタン4', BTN5: 'ボタン5',
+    WH_U: 'ホイール↑', WH_D: 'ホイール↓', WH_L: 'ホイール←', WH_R: 'ホイール→',
+  };
+  const SPECIAL = {
+    0x7C00: 'Boot', 0x7C01: 'Reboot', 0x7C03: 'EE消去', 0x7C16: 'Esc/`', 0x7C73: 'CapsWord', 0x7C77: 'MO13', 0x7C78: 'MO23', 0x7C79: 'Repeat',
+    0x7C53: 'DM記録1', 0x7C54: 'DM記録2', 0x7C55: 'DM停止', 0x7C56: 'DM再生1', 0x7C57: 'DM再生2',
+  };
+  /* Shift を押しながら打ったときに出る文字（OS が JIS 配列設定の場合） */
+  const SHIFT_JIS = {
+    '1': '!', '2': '"', '3': '#', '4': '$', '5': '%', '6': '&', '7': "'", '8': '(', '9': ')',
+    MINS: '=', EQL: '~', INT3: '|', LBRC: '`', RBRC: '{', SCLN: '+', QUOT: '*', NUHS: '}', BSLS: '}',
+    COMM: '<', DOT: '>', SLSH: '?', INT1: '_',
+  };
+  function shiftLabel(code) { const k = byCode.get(code); return (k && SHIFT_JIS[k.name]) || ''; }
+  function basicLabel(code) { const k = byCode.get(code); return k ? (NICE[k.name] || k.jis || k.name) : hex(code, 2); }
+  function modsLabel(bits) {
+    const n = [];
+    if (bits & 1) n.push('Ctrl'); if (bits & 2) n.push('Shift'); if (bits & 4) n.push('Alt'); if (bits & 8) n.push('GUI');
+    return ((bits & 0x10) ? 'R' : '') + n.join('+');
+  }
+  /* キーコード → { main, sub, kind }。ctx: { macros:[テキスト], custom:[短い名前] } */
+  function keyLabel(kc, ctx) {
+    const c = ctx || {};
+    if (kc === 0) return { main: '', sub: '', kind: 'none' };
+    if (kc === 1) return { main: '▽', sub: '', kind: 'trns' };
+    if (kc < 0x100) return { main: basicLabel(kc), sub: '', kind: 'basic', shift: shiftLabel(kc) };
+    const lo = kc & 0xFF, inner = lo <= 1 ? '' : basicLabel(lo), sh = lo <= 1 ? '' : shiftLabel(lo);
+    if (kc < 0x2000) {
+      /* Shift だけとの組み合わせは、実際に出る文字を主表示にする（例: Shift+ろ → _ ） */
+      if (((kc >> 8) & 0x0F) === 2 && sh) return { main: sh, sub: 'Shift+' + inner, kind: 'mod' };
+      return { main: inner, sub: modsLabel(kc >> 8), kind: 'mod' };
+    }
+    if (kc < 0x4000) return { main: inner, sub: modsLabel((kc >> 8) & 0x1F) + ' 長押し', kind: 'mod', shift: sh };
+    if (kc < 0x5000) return { main: inner, sub: 'L' + ((kc >> 8) & 0xF) + ' 長押し', kind: 'layer', shift: sh };
+    if (kc < 0x5200) return { main: 'L' + ((kc >> 5) & 0xF), sub: modsLabel(kc & 0x1F) + ' 付き', kind: 'layer' };
+    if (kc < 0x5300) {
+      const g = (kc - 0x5200) >> 5, n = kc & 0x1F;
+      if (g === 5) return { main: modsLabel(n), sub: '次の1打だけ', kind: 'mod' };
+      const names = ['TO', 'MO', 'DF', 'TG', 'OSL', '', 'TT', 'PDF'];
+      const subs = ['へ移動', '押す間', 'を基本に', '切り替え', '次の1打', '', 'タップ切替', 'を基本に保存'];
+      return { main: names[g] + ' ' + n, sub: 'L' + n + ' ' + subs[g], kind: 'layer' };
+    }
+    if (kc >= 0x5700 && kc < 0x5800) return { main: 'TD ' + (kc & 0xFF), sub: 'タップダンス', kind: 'special' };
+    if (kc >= 0x7700 && kc < 0x7780) {
+      const n = kc - 0x7700, src = (c.macros && c.macros[n]) || '';
+      const flat = src.replace(/\s+/g, ' ');
+      return { main: 'M' + n, sub: flat.slice(0, 14), kind: 'macro', id: n, desc: flat.length > 90 ? flat.slice(0, 90) + '…' : (flat || '（空）') };
+    }
+    if (kc >= 0x7E00 && kc < 0x7E40) {
+      const n = kc - 0x7E00, cu = c.custom && c.custom[n];
+      return { main: (cu && (cu.short || cu)) || ('USER' + n), sub: '', kind: 'custom', id: n, desc: (cu && cu.title) || '' };
+    }
+    if (SPECIAL[kc]) return { main: SPECIAL[kc], sub: '', kind: 'special' };
+    return { main: hex(kc, 4), sub: '', kind: 'special' };
+  }
+
+  /* ---- キーコードの文字表記（キー割り当て編集用） ---- */
+  const MODNAME = {
+    LCTL: 0x01, LSFT: 0x02, LALT: 0x04, LGUI: 0x08, RCTL: 0x11, RSFT: 0x12, RALT: 0x14, RGUI: 0x18,
+    CTL: 1, CTRL: 1, LCTRL: 1, SFT: 2, SHIFT: 2, LSHIFT: 2, ALT: 4, OPT: 4, LOPT: 4, GUI: 8, CMD: 8, WIN: 8, LCMD: 8, LWIN: 8,
+    RCTRL: 0x11, RSHIFT: 0x12, ROPT: 0x14, ALGR: 0x14, RCMD: 0x18, RWIN: 0x18, MEH: 7, HYPR: 0xF,
+  };
+  /* QMK の関数書式（LCTL(kc) など）で使う名前 → 修飾ビット */
+  const MODFN = Object.assign({}, MODNAME, {
+    C: 1, S: 2, A: 4, G: 8, C_S: 3, LCS: 3, LCA: 5, LCG: 9, LSA: 6, LSG: 0xA, SGUI: 0xA, SCMD: 0xA, SWIN: 0xA, LAG: 0xC, LCAG: 0xD, ALL: 0xF,
+    RCS: 0x13, RCA: 0x15, RCG: 0x19, RSA: 0x16, RSG: 0x1A, RAG: 0x1C, RCAG: 0x1D,
+  });
+  const LAYER_OPS = { TO: 0, MO: 1, DF: 2, TG: 3, OSL: 4, TT: 6, PDF: 7 };
+  const LAYER_OP_NAMES = ['TO', 'MO', 'DF', 'TG', 'OSL', '', 'TT', 'PDF'];
+  const NAMED = {
+    BOOT: 0x7C00, QK_BOOT: 0x7C00, QK_BOOTLOADER: 0x7C00, RESET: 0x7C00, REBOOT: 0x7C01, QK_REBOOT: 0x7C01, QK_RBT: 0x7C01,
+    EE_CLR: 0x7C03, QK_CLEAR_EEPROM: 0x7C03, GESC: 0x7C16, QK_GESC: 0x7C16, QK_GRAVE_ESCAPE: 0x7C16,
+    DM_REC1: 0x7C53, DM_REC2: 0x7C54, DM_RSTP: 0x7C55, DM_PLY1: 0x7C56, DM_PLY2: 0x7C57,
+    CW_TOGG: 0x7C73, QK_CAPS_WORD_TOGGLE: 0x7C73, QK_REP: 0x7C79, QK_REPEAT_KEY: 0x7C79,
+    TILD: 0x235, EXLM: 0x21E, AT: 0x21F, HASH: 0x220, DLR: 0x221, PERC: 0x222, CIRC: 0x223, AMPR: 0x224, ASTR: 0x225,
+    LPRN: 0x226, RPRN: 0x227, UNDS: 0x22D, PLUS: 0x22E, LCBR: 0x22F, RCBR: 0x230, PIPE: 0x231, COLN: 0x233, DQUO: 0x234,
+    LABK: 0x236, RABK: 0x237, QUES: 0x238, LT: 0x236, GT: 0x237,
+    LCPO: 0x7C18, RCPC: 0x7C19, LSPO: 0x7C1A, RSPC: 0x7C1B, LAPO: 0x7C1C, RAPC: 0x7C1D, SFTENT: 0x7C1E, FN_MO13: 0x7C77, FN_MO23: 0x7C78,
+    DYN_REC_START1: 0x7C53, DYN_REC_START2: 0x7C54, DYN_REC_STOP: 0x7C55, DYN_MACRO_PLAY1: 0x7C56, DYN_MACRO_PLAY2: 0x7C57,
+  };
+  const NAMED_OUT = { 0x7C00: 'BOOT', 0x7C01: 'REBOOT', 0x7C03: 'EE_CLR', 0x7C16: 'GESC', 0x7C53: 'DM_REC1', 0x7C54: 'DM_REC2', 0x7C55: 'DM_RSTP', 0x7C56: 'DM_PLY1', 0x7C57: 'DM_PLY2', 0x7C73: 'CW_TOGG', 0x7C79: 'QK_REP',
+    0x7C18: 'LCPO', 0x7C19: 'RCPC', 0x7C1A: 'LSPO', 0x7C1B: 'RSPC', 0x7C1C: 'LAPO', 0x7C1D: 'RAPC', 0x7C1E: 'SFTENT', 0x7C77: 'FN_MO13', 0x7C78: 'FN_MO23' };
+
+  /* かっこの外側にあるカンマ（または指定の区切り）で分ける */
+  function splitTop(text, sep) {
+    const out = [];
+    let depth = 0, cur = '';
+    for (const ch of text) {
+      if (ch === '(') depth++;
+      if (ch === ')') depth--;
+      if (ch === sep && depth === 0) { out.push(cur); cur = ''; } else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+  function stripParens(t) {
+    for (;;) {
+      if (t[0] !== '(' || t[t.length - 1] !== ')') return t;
+      let depth = 0, wraps = true;
+      for (let i = 0; i < t.length - 1; i++) { if (t[i] === '(') depth++; if (t[i] === ')') depth--; if (depth === 0) { wraps = false; break; } }
+      if (!wraps) return t;
+      t = t.slice(1, -1);
+    }
+  }
+  function modsFromText(text) {
+    let bits = 0;
+    for (let part of String(text).toUpperCase().split(/[+|]/)) {
+      part = part.trim().replace(/^(MOD_|QK_|KC_)/, '');
+      if (!(part in MODNAME)) throw new Error('修飾キーの名前が分かりません: ' + part);
+      bits |= MODNAME[part];
+    }
+    return bits;
+  }
+  function modsToText(bits) {
+    const side = (bits & 0x10) ? 'R' : 'L', n = [];
+    if (bits & 1) n.push(side + 'CTL'); if (bits & 2) n.push(side + 'SFT'); if (bits & 4) n.push(side + 'ALT'); if (bits & 8) n.push(side + 'GUI');
+    return n.join('+');
+  }
+  function num(text, max, what) {
+    if (!/^\d+$/.test(text) || Number(text) > max) throw new Error(what + 'は 0〜' + max + ' の数字で指定してください: ' + text);
+    return Number(text);
+  }
+
+  /* 文字 → キーコード。QMK の書き方（LCTL(KC_C)、LT(1,KC_SPC)、QK_LGUI|KC_L、_______ など）も読める。
+     custom: [{ name, short }]（キーボードの専用キー） */
+  function keycodeFromText(text, custom) {
+    const t = stripParens(String(text).trim().toUpperCase().replace(/\s+/g, ''));
+    const tapOnly = arg => { const kc = keycodeFromText(arg, custom); if (kc > 0xFF) throw new Error('タップ側には単独のキーだけ指定できます: ' + arg); return kc; };
+    if (t === '' ) throw new Error('キーコードが空です');
+    if (t === 'NO' || t === 'KC_NO' || t === 'XXXXXXX') return 0;
+    if (t === 'TRNS' || t === 'KC_TRNS' || t === 'KC_TRANSPARENT' || t === 'TRANSPARENT' || /^_+$/.test(t)) return 1;
+    if (/^0X[0-9A-F]{1,4}$/.test(t)) return parseInt(t.slice(2), 16);
+    const ors = splitTop(t, '|');
+    if (ors.length > 1) {
+      let kc = 0;
+      for (const part of ors) {
+        const q = stripParens(part);
+        if (/^QK_[LR](CTL|SFT|ALT|GUI)$/.test(q)) kc |= MODNAME[q.slice(3)] << 8;
+        else { const inner = keycodeFromText(q, custom); if (inner >= 0x2000) throw new Error('組み合わせにできません: ' + part); kc |= inner; }
+      }
+      return kc;
+    }
+    let m = /^([A-Z_][A-Z0-9_]*)\((.*)\)$/.exec(t);
+    if (m && stripParens('(' + m[2] + ')') === m[2]) {
+      const fn = m[1], args = splitTop(m[2], ',');
+      const need = n => { if (args.length !== n) throw new Error(fn + ' の指定は ' + n + ' 個です'); };
+      const ltn = /^LT(\d+)$/.exec(fn);   /* Vial の保存ファイルの書き方: LT1(KC_A) */
+      if (ltn) { need(1); return 0x4000 | (num(ltn[1], 15, 'レイヤー') << 8) | tapOnly(args[0]); }
+      if (fn === 'LT') { need(2); return 0x4000 | (num(args[0], 15, 'レイヤー') << 8) | tapOnly(args[1]); }
+      if (fn === 'MT') { need(2); return 0x2000 | (modsFromText(args[0]) << 8) | tapOnly(args[1]); }
+      if (fn === 'LM') { need(2); return 0x5000 | (num(args[0], 15, 'レイヤー') << 5) | modsFromText(args[1]); }
+      if (fn in LAYER_OPS) { need(1); return 0x5200 + LAYER_OPS[fn] * 32 + num(args[0], 31, 'レイヤー'); }
+      if (fn === 'OSM') { need(1); return 0x52A0 | modsFromText(args[0]); }
+      if (fn === 'TD') { need(1); return 0x5700 + num(args[0], 255, 'タップダンス番号'); }
+      if (fn === 'MACRO' || fn === 'M') { need(1); return 0x7700 + num(args[0], 127, 'マクロ番号'); }
+      if (fn === 'USER') { need(1); return 0x7E00 + num(args[0], 63, '専用キー番号'); }
+      if (fn.endsWith('_T') && fn.slice(0, -2) in MODFN) { need(1); return 0x2000 | (MODFN[fn.slice(0, -2)] << 8) | tapOnly(args[0]); }
+      if (fn in MODFN) {
+        need(1);
+        const inner = keycodeFromText(args[0], custom);
+        if (inner >= 0x2000) throw new Error(fn + '( ) の中には普通のキーだけ指定できます');
+        return inner | (MODFN[fn] << 8);
+      }
+      throw new Error('この書き方は分かりません: ' + fn + '( )');
+    }
+    if ((m = /^(?:M|QK_MACRO_|MACRO_?)(\d+)$/.exec(t))) return 0x7700 + num(m[1], 127, 'マクロ番号');
+    if ((m = /^(?:USER|QK_KB_)(\d+)$/.exec(t))) return 0x7E00 + num(m[1], 63, '専用キー番号');
+    if (custom) {
+      const i = custom.findIndex(c => (c.name && c.name.toUpperCase() === t) || (c.short && c.short.toUpperCase() === t));
+      if (i >= 0) return 0x7E00 + i;
+    }
+    const bare = t.startsWith('KC_') ? t.slice(3) : t;
+    if (bare in NAMED) return NAMED[bare];
+    if (t in NAMED) return NAMED[t];
+    if (/[*:]/.test(t) || t[0] === '+' || t[0] === '-') throw new Error('キーコードにできません: ' + text);
+    let acts;
+    try { acts = parseToken(t); } catch (e) { throw new Error(e.message); }
+    if (acts.length !== 1 || acts[0].t !== 'tap') throw new Error('左右の修飾キーは混ぜられません: ' + text);
+    return acts[0].kc;
+  }
+
+  /* キーコード → 文字（keycodeFromText で元に戻せる形） */
+  function keycodeToText(kc, custom) {
+    const tap = c => (c === 0 ? 'NO' : c === 1 ? 'TRNS' : (keyName(c) || hex(c, 2)));
+    if (kc < 0x100) return tap(kc);
+    if (kc < 0x2000) return codeToken(kc);
+    const lo = kc & 0xFF;
+    if (kc < 0x4000) { const mods = modsToText((kc >> 8) & 0x1F); return mods ? 'MT(' + mods + ',' + tap(lo) + ')' : hex(kc, 4); }
+    if (kc < 0x5000) return 'LT(' + ((kc >> 8) & 0xF) + ',' + tap(lo) + ')';
+    if (kc < 0x5200) { const mods = modsToText(kc & 0x1F); return mods ? 'LM(' + ((kc >> 5) & 0xF) + ',' + mods + ')' : hex(kc, 4); }
+    if (kc < 0x5300) {
+      const g = (kc - 0x5200) >> 5, n = kc & 0x1F;
+      if (g === 5) { const mods = modsToText(n); return mods ? 'OSM(' + mods + ')' : hex(kc, 4); }
+      return LAYER_OP_NAMES[g] + '(' + n + ')';
+    }
+    if (kc >= 0x5700 && kc < 0x5800) return 'TD(' + (kc & 0xFF) + ')';
+    if (kc >= 0x7700 && kc < 0x7780) return 'M' + (kc - 0x7700);
+    if (kc >= 0x7E00 && kc < 0x7E40) { const n = kc - 0x7E00, cu = custom && custom[n]; return (cu && cu.name) || ('USER' + n); }
+    return NAMED_OUT[kc] || hex(kc, 4);
+  }
+
+  /* 配置に含まれるキーを、行・列の順（keymap.c の LAYOUT と同じ並び）で返す */
+  function matrixOrder(def) {
+    return def.layout.keys.filter(k => k.enc === undefined).slice().sort((a, b) => a.row - b.row || a.col - b.col);
+  }
+  /* 1レイヤーぶんを文字にする（行ごとに改行。エンコーダーは ENC0: 反時計回り, 時計回り） */
+  function layerToText(def, layerKeys, layerEnc, custom) {
+    const lines = [];
+    let row = -1, cur = [];
+    for (const k of matrixOrder(def)) {
+      if (k.row !== row) { if (cur.length) lines.push(cur.join(', ')); cur = []; row = k.row; }
+      cur.push(keycodeToText(layerKeys[k.row][k.col], custom));
+    }
+    if (cur.length) lines.push(cur.join(', '));
+    let out = lines.join(',\n');
+    (layerEnc || []).forEach((e, i) => { out += '\nENC' + i + ': ' + keycodeToText(e[0], custom) + ', ' + keycodeToText(e[1], custom); });
+    return out;
+  }
+  /* Vial の保存ファイル（.vil）の1レイヤーぶん → layerFromText と同じ形 */
+  function layerFromVil(vil, layer, def, custom) {
+    const lay = vil && vil.layout && vil.layout[layer];
+    if (!lay) throw new Error('この保存ファイルにレイヤー ' + layer + ' はありません');
+    const conv = (v, where) => {
+      if (v === -1 || v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      try { return keycodeFromText(v, custom); } catch (e) { throw new Error(where + '「' + v + '」: ' + e.message); }
+    };
+    const keys = matrixOrder(def).map(k => {
+      if (!lay[k.row] || lay[k.row][k.col] === undefined) throw new Error('保存ファイルのキー配置がこのキーボードと合いません');
+      return { row: k.row, col: k.col, kc: conv(lay[k.row][k.col], '行 ' + k.row + '・列 ' + k.col) };
+    });
+    const enc = ((vil.encoder_layout && vil.encoder_layout[layer]) || []).map((e, i) => [conv(e[0], 'ENC' + i), conv(e[1], 'ENC' + i)]);
+    return { keys, enc };
+  }
+  /* 文字 → 1レイヤーぶんの割り当て。keymap.c の [n] = LAYOUT( … ) をそのまま貼ってもよい */
+  function layerFromText(text, def, custom) {
+    let t = String(text).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const enc = [];
+    t = t.replace(/^\s*ENC(\d+)\s*:\s*(.*)$/gim, (all, i, rest) => {
+      const parts = splitTop(rest.replace(/,\s*$/, ''), ',');
+      if (parts.length !== 2) throw new Error('ENC' + i + ' は「反時計回り, 時計回り」の2つを指定してください');
+      enc[Number(i)] = parts.map(x => keycodeFromText(x, custom));
+      return '';
+    });
+    t = t.trim().replace(/^(\[\s*\w+\s*\]\s*=\s*)?LAYOUT\w*\s*\(/i, '(').replace(/,\s*$/, '');
+    t = stripParens(t.replace(/\s+/g, ''));
+    const order = matrixOrder(def);
+    const parts = t === '' ? [] : splitTop(t, ',').filter((x, i, a) => !(x === '' && i === a.length - 1));
+    if (parts.length === 0 && enc.length) return { keys: [], enc };
+    if (parts.length !== order.length) throw new Error('キーの数が合いません（このキーボードは ' + order.length + ' 個、テキストは ' + parts.length + ' 個）');
+    const keys = parts.map((x, i) => {
+      try { return { row: order[i].row, col: order[i].col, kc: keycodeFromText(x, custom) }; }
+      catch (e) { throw new Error((i + 1) + ' 個目「' + x + '」: ' + e.message); }
+    });
+    return { keys, enc };
+  }
+
+  /* Vial の配置定義（KLE 形式）→ キーの位置一覧 */
+  function parseKle(rows) {
+    const keys = [];
+    let y = 0;
+    for (const row of rows) {
+      let x = 0, w = 1, h = 1, decal = false;
+      for (const item of row) {
+        if (typeof item === 'object') { if (item.x) x += item.x; if (item.y) y += item.y; if (item.w) w = item.w; if (item.h) h = item.h; if (item.d) decal = true; continue; }
+        const lab = String(item).split('\n'), rc = lab[0].split(',').map(Number);
+        const k = { x, y, w, h };
+        if (lab[9] === 'e') { k.enc = rc[0]; k.dir = rc[1]; } else { k.row = rc[0]; k.col = rc[1]; }
+        /* 飾りのキーと、配置オプションの2番目以降の選択肢は描かない */
+        const opt = lab[8] ? lab[8].split(',').map(Number) : null;
+        if (!decal && !(opt && opt[1] > 0) && rc.length === 2 && rc.every(Number.isFinite)) keys.push(k);
+        x += w; w = 1; h = 1; decal = false;
+      }
+      y += 1;
+    }
+    return { keys, width: Math.max(1, ...keys.map(k => k.x + k.w)), height: Math.max(1, ...keys.map(k => k.y + k.h)) };
+  }
+  /* vial.json の内容 → 表示に使う形 */
+  function toDefinition(json) {
+    const layout = parseKle(json.layouts.keymap);
+    return {
+      name: json.name || '', rows: json.matrix.rows, cols: json.matrix.cols, layout,
+      encoders: layout.keys.reduce((n, k) => (k.enc !== undefined ? Math.max(n, k.enc + 1) : n), 0),
+      custom: (json.customKeycodes || []).map((c, i) => ({ short: c.shortName || c.name || ('USER' + i), name: c.name || '', title: c.title || '' })),
+    };
+  }
+
+  /* 有効なレイヤーを上から見て、透過でない最初の割り当てを返す（QMK と同じ決まり） */
+  function effective(perLayer, mask) {
+    for (let l = perLayer.length - 1; l > 0; l--) {
+      if ((mask >>> l) & 1 && perLayer[l] !== 1) return { kc: perLayer[l], layer: l };
+    }
+    return { kc: perLayer[0], layer: 0 };
+  }
+  function highestLayer(mask) { return mask ? 31 - Math.clz32(mask) : 0; }
+  function parseLayerState(d) {
+    if (d[0] === 0xFF) return { supported: false };
+    if (d[0] !== 0xF7 || d[2] < 1) return null;
+    const u32 = o => (d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) >>> 0;
+    return { supported: true, highest: d[3], layers: u32(4), def: u32(8), osDefault: d[12] };
+  }
+
+  /* ---- XZ（LZMA2）の展開: キーボード内に圧縮して保存されている定義データを読むため ---- */
+  let CRC_TABLE = null;
+  function crc32(buf) {
+    if (!CRC_TABLE) { CRC_TABLE = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); CRC_TABLE[n] = c >>> 0; } }
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function lzma2Decode(src, p, o) {
+    const IS_MATCH = 0, IS_REP = 192, G0 = 204, G1 = 216, G2 = 228, REP0LONG = 240, POS_SLOT = 432, POS_SPEC = 688, ALIGN = 803, LEN = 819, REPLEN = 1333, LIT = 1847;
+    let lc = 0, lp = 0, pb = 0, probs = null, state = 0, rep0 = 0, rep1 = 0, rep2 = 0, rep3 = 0, range = 0, code = 0, base = o.len;
+    const ensure = n => { if (o.len + n > o.buf.length) { const nb = new Uint8Array(Math.max(o.buf.length * 2, o.len + n)); nb.set(o.buf.subarray(0, o.len)); o.buf = nb; } };
+    const bit = i => {
+      const pr = probs[i], bound = (range >>> 11) * pr;
+      let b;
+      if (code < bound) { range = bound; probs[i] = pr + ((2048 - pr) >> 5); b = 0; }
+      else { range = (range - bound) >>> 0; code = (code - bound) >>> 0; probs[i] = pr - (pr >> 5); b = 1; }
+      if (range < 0x1000000) { range = (range << 8) >>> 0; code = ((code << 8) | src[p++]) >>> 0; }
+      return b;
+    };
+    const tree = (off, n) => { let m = 1; for (let i = 0; i < n; i++) m = (m << 1) | bit(off + m); return m - (1 << n); };
+    const rtree = (off, n) => { let m = 1, sym = 0; for (let i = 0; i < n; i++) { const b = bit(off + m); m = (m << 1) | b; sym |= b << i; } return sym; };
+    const len = (off, ps) => { if (!bit(off)) return tree(off + 2 + ps * 8, 3); if (!bit(off + 1)) return 8 + tree(off + 130 + ps * 8, 3); return 16 + tree(off + 258, 8); };
+    for (;;) {
+      if (p >= src.length) throw new Error('定義データが途中で切れています');
+      const c = src[p++];
+      if (c === 0) return p;
+      if (c === 1 || c === 2) {
+        const n = ((src[p] << 8) | src[p + 1]) + 1; p += 2;
+        if (c === 1) base = o.len;
+        ensure(n); o.buf.set(src.subarray(p, p + n), o.len); o.len += n; p += n; continue;
+      }
+      if (c < 0x80) throw new Error('定義データの形式が不正です');
+      const un = (((c & 0x1F) << 16) | (src[p] << 8) | src[p + 1]) + 1, cn = ((src[p + 2] << 8) | src[p + 3]) + 1, mode = (c >> 5) & 3;
+      p += 4;
+      if (mode === 3) base = o.len;
+      if (mode >= 2) {
+        let d = src[p++];
+        if (d >= 225) throw new Error('定義データの形式が不正です');
+        lc = d % 9; d = (d / 9) | 0; lp = d % 5; pb = (d / 5) | 0;
+        probs = new Uint16Array(LIT + (0x300 << (lc + lp)));
+      }
+      if (!probs) throw new Error('定義データの形式が不正です');
+      if (mode >= 1) { probs.fill(1024); state = 0; rep0 = rep1 = rep2 = rep3 = 0; }
+      const endIn = p + cn;
+      code = ((src[p + 1] << 24) | (src[p + 2] << 16) | (src[p + 3] << 8) | src[p + 4]) >>> 0; p += 5; range = 0xFFFFFFFF;
+      ensure(un);
+      const buf = o.buf, target = o.len + un, pbMask = (1 << pb) - 1, lpMask = (1 << lp) - 1;
+      while (o.len < target) {
+        const pos = o.len - base, ps = pos & pbMask;
+        if (!bit(IS_MATCH + (state << 4) + ps)) {
+          const prev = pos > 0 ? buf[o.len - 1] : 0, lit = LIT + 0x300 * (((pos & lpMask) << lc) + (prev >> (8 - lc)));
+          let sym = 1;
+          if (state >= 7) {
+            let mb = buf[o.len - rep0 - 1];
+            do { const mbit = (mb >> 7) & 1; mb <<= 1; const b = bit(lit + ((1 + mbit) << 8) + sym); sym = (sym << 1) | b; if (mbit !== b) break; } while (sym < 0x100);
+          }
+          while (sym < 0x100) sym = (sym << 1) | bit(lit + sym);
+          buf[o.len++] = sym & 0xFF;
+          state = state < 4 ? 0 : state < 10 ? state - 3 : state - 6;
+          continue;
+        }
+        let n;
+        if (bit(IS_REP + state)) {
+          if (pos === 0) throw new Error('定義データの形式が不正です');
+          if (!bit(G0 + state)) {
+            if (!bit(REP0LONG + (state << 4) + ps)) { state = state < 7 ? 9 : 11; buf[o.len] = buf[o.len - rep0 - 1]; o.len++; continue; }
+          } else {
+            let dist;
+            if (!bit(G1 + state)) dist = rep1; else { if (!bit(G2 + state)) dist = rep2; else { dist = rep3; rep3 = rep2; } rep2 = rep1; }
+            rep1 = rep0; rep0 = dist;
+          }
+          n = len(REPLEN, ps); state = state < 7 ? 8 : 11;
+        } else {
+          rep3 = rep2; rep2 = rep1; rep1 = rep0;
+          n = len(LEN, ps); state = state < 7 ? 7 : 10;
+          const slot = tree(POS_SLOT + (n < 4 ? n : 3) * 64, 6);
+          if (slot < 4) rep0 = slot;
+          else {
+            const nd = (slot >> 1) - 1;
+            let dist = ((2 | (slot & 1)) << nd) >>> 0;
+            if (slot < 14) dist += rtree(POS_SPEC + dist - slot, nd);
+            else {
+              let direct = 0;
+              for (let i = nd - 4; i > 0; i--) {
+                range >>>= 1;
+                let b = 0;
+                if (code >= range) { code = (code - range) >>> 0; b = 1; }
+                if (range < 0x1000000) { range = (range << 8) >>> 0; code = ((code << 8) | src[p++]) >>> 0; }
+                direct = direct * 2 + b;
+              }
+              dist += direct * 16 + rtree(ALIGN, 4);
+            }
+            rep0 = dist;
+          }
+        }
+        n += 2;
+        if (rep0 >= pos || o.len + n > target) throw new Error('定義データの形式が不正です');
+        for (let i = 0; i < n; i++) { buf[o.len] = buf[o.len - rep0 - 1]; o.len++; }
+      }
+      p = endIn;
+    }
+  }
+  function xzDecompress(src) {
+    if (![0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00].every((b, i) => src[i] === b)) throw new Error('定義データが XZ 形式ではありません');
+    const checkSize = [0, 4, 4, 4, 8, 8, 8, 16, 16, 16, 32, 32, 32, 64, 64, 64][src[7] & 0x0F];
+    const o = { buf: new Uint8Array(4096), len: 0 };
+    let p = 12;
+    while (p < src.length && src[p] !== 0) {
+      const hsize = (src[p] + 1) * 4, flags = src[p + 1];
+      let q = p + 2;
+      const varint = () => { let v = 0, sh = 0, b; do { b = src[q++]; v += (b & 0x7F) * Math.pow(2, sh); sh += 7; } while (b & 0x80); return v; };
+      if (flags & 0x40) varint();
+      if (flags & 0x80) varint();
+      if ((flags & 3) !== 0 || varint() !== 0x21) throw new Error('対応していない圧縮方式です');
+      p += hsize;
+      const start = p;
+      p = lzma2Decode(src, p, o);
+      while ((p - start) & 3) p++;
+      p += checkSize;
+    }
+    return o.buf.slice(0, o.len);
+  }
+  /* 無圧縮のまま XZ 形式に包む（模擬キーボードが定義データを返すために使う） */
+  function xzStore(data) {
+    const out = [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00, 0x00, 0x00];
+    const le32 = v => [v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF];
+    out.push(...le32(crc32([0x00, 0x00])));
+    const bh = [0x02, 0x00, 0x21, 0x01, 0x16, 0x00, 0x00, 0x00];
+    out.push(...bh, ...le32(crc32(bh)));
+    const start = out.length;
+    for (let off = 0, first = true; off < data.length; off += 65536, first = false) {
+      const n = Math.min(65536, data.length - off);
+      out.push(first ? 1 : 2, ((n - 1) >> 8) & 0xFF, (n - 1) & 0xFF);
+      for (let i = 0; i < n; i++) out.push(data[off + i]);
+    }
+    out.push(0);
+    while ((out.length - start) & 3) out.push(0);
+    return Uint8Array.from(out);
+  }
+
+  /* ---- Vial 通信 ---- */
+  const PKT = 32, CHUNK = 28;
+  class Vial {
+    constructor(transport) {
+      this.tr = transport; this.q = Promise.resolve(); this.known = new Uint8Array(0);
+      this.onLayer = null;
+      transport.onPush = d => { const s = parseLayerState(d); if (s && s.supported && this.onLayer) this.onLayer(s); };
+    }
+    async layerCount() { const r = await this.cmd([0x11]); return r[1]; }
+    /* キーボード内の定義（vial.json）を読み出して展開する */
+    async readDefinition() {
+      let r = await this.cmd([0xFE, 0x01]);
+      const size = (r[0] | (r[1] << 8) | (r[2] << 16) | (r[3] << 24)) >>> 0;
+      if (!size || size > 0x100000) throw new Error('定義データの大きさが不正です');
+      const raw = new Uint8Array(size);
+      for (let page = 0; page * PKT < size; page++) {
+        r = await this.cmd([0xFE, 0x02, page & 0xFF, page >> 8]);
+        raw.set(r.slice(0, Math.min(PKT, size - page * PKT)), page * PKT);
+      }
+      return JSON.parse(new TextDecoder('utf-8').decode(xzDecompress(raw)));
+    }
+    /* 全レイヤーの割り当てを読む → keymap[layer][row][col] */
+    async readKeymap(layers, rows, cols) {
+      const total = layers * rows * cols * 2, raw = new Uint8Array(total);
+      for (let off = 0; off < total; off += CHUNK) {
+        const sz = Math.min(CHUNK, total - off);
+        const r = await this.cmd([0x12, off >> 8, off & 0xFF, sz]);
+        raw.set(r.slice(4, 4 + sz), off);
+      }
+      const km = [];
+      for (let l = 0; l < layers; l++) { km.push([]); for (let r = 0; r < rows; r++) { km[l].push([]); for (let c = 0; c < cols; c++) { const o = ((l * rows + r) * cols + c) * 2; km[l][r].push((raw[o] << 8) | raw[o + 1]); } } }
+      return km;
+    }
+    /* エンコーダーの割り当て → enc[layer][番号] = [反時計回り, 時計回り] */
+    async readEncoders(layers, count) {
+      const out = [];
+      for (let l = 0; l < layers; l++) { out.push([]); for (let i = 0; i < count; i++) { const r = await this.cmd([0xFE, 0x03, l, i]); out[l].push([(r[0] << 8) | r[1], (r[2] << 8) | r[3]]); } }
+      return out;
+    }
+    async setKeycode(layer, row, col, kc) { await this.cmd([0x05, layer, row, col, kc >> 8, kc & 0xFF]); }
+    async setEncoder(layer, idx, dir, kc) { await this.cmd([0xFE, 0x04, layer, idx, dir, kc >> 8, kc & 0xFF]); }
+    /* 現在のレイヤー状態（兼、変化通知の申し込み） */
+    async layerState() { return parseLayerState(await this.cmd([0xF7, 0x01])); }
+    cmd(bytes) {
+      const pkt = new Uint8Array(PKT); pkt.set(bytes);
+      const run = () => this.tr.send(pkt);
+      const p = this.q.then(run, run);
+      this.q = p.catch(() => {});
+      return p;
+    }
+    async init() {
+      let r = await this.cmd([0x01]);
+      this.viaProtocol = (r[1] << 8) | r[2];
+      r = await this.cmd([0xFE, 0x00]);
+      if (r[0] === 0xFE || r[0] === 0xFF) throw new Error('Vial 対応のファームウェアではありません');
+      this.vialProtocol = (r[0] | (r[1] << 8) | (r[2] << 16) | (r[3] << 24)) >>> 0;
+      this.uid = Array.from(r.slice(4, 12));
+      if (this.vialProtocol < 2) throw new Error('ファームウェアの Vial が古く、このマクロ形式に対応していません');
+      r = await this.cmd([0x0C]); this.macroCount = r[1];
+      r = await this.cmd([0x0D]); this.bufSize = (r[1] << 8) | r[2];
+      if (!this.macroCount || !this.bufSize) throw new Error('このキーボードはマクロ用の領域を持っていません');
+      r = await this.readRange(this.bufSize - 1, 1); this.lastByte = r[0];
+    }
+    async readRange(off, len) {
+      const out = new Uint8Array(len);
+      for (let p = 0; p < len; p += CHUNK) {
+        const sz = Math.min(CHUNK, len - p), o = off + p;
+        const r = await this.cmd([0x0E, o >> 8, o & 0xFF, sz]);
+        out.set(r.slice(4, 4 + sz), p);
+      }
+      return out;
+    }
+    /* 先頭から、マクロ数ぶんの区切りが見つかるまで読む */
+    async readMacros() {
+      const acc = [];
+      let zeros = 0;
+      for (let off = 0; off < this.bufSize && zeros < this.macroCount; off += CHUNK) {
+        const sz = Math.min(CHUNK, this.bufSize - off);
+        const r = await this.cmd([0x0E, off >> 8, off & 0xFF, sz]);
+        for (let i = 0; i < sz; i++) { acc.push(r[4 + i]); if (r[4 + i] === 0) zeros++; }
+      }
+      this.known = Uint8Array.from(acc);
+      return this.known;
+    }
+    async unlockStatus() {
+      const r = await this.cmd([0xFE, 0x05]);
+      const keys = [];
+      for (let i = 0; i < 15; i++) { const row = r[2 + i * 2], col = r[3 + i * 2]; if (row !== 255 && col !== 255) keys.push([row, col]); }
+      return { unlocked: !!r[0], inProgress: !!r[1], keys };
+    }
+    async unlockStart() { await this.cmd([0xFE, 0x06]); }
+    async unlockPoll() { const r = await this.cmd([0xFE, 0x07]); return { unlocked: !!r[0], inProgress: !!r[1], counter: r[2] }; }
+    /* 変わった部分だけ書き込み、読み戻して照合する */
+    async writeMacros(data) {
+      if (data.length > this.bufSize) throw new Error('マクロ全体が保存領域を超えています');
+      const old = this.known;
+      let written = 0;
+      for (let off = 0; off < data.length; off += CHUNK) {
+        const chunk = data.subarray(off, Math.min(off + CHUNK, data.length));
+        const same = off + chunk.length <= old.length && chunk.every((b, i) => old[off + i] === b);
+        if (same) continue;
+        await this.cmd([0x0F, off >> 8, off & 0xFF, chunk.length, ...chunk]);
+        written++;
+      }
+      if (this.lastByte !== 0 && data.length < this.bufSize) {
+        const o = this.bufSize - 1;
+        await this.cmd([0x0F, o >> 8, o & 0xFF, 1, 0]);
+        this.lastByte = 0;
+      }
+      const back = await this.readRange(0, data.length);
+      for (let i = 0; i < data.length; i++) {
+        if (back[i] !== data[i]) { this.known = new Uint8Array(0); throw new Error('書き込んだ内容を読み戻すと一致しませんでした（ロックが解除されていない可能性があります）'); }
+      }
+      this.known = data.slice();
+      return written;
+    }
+  }
+
+  /* ---- 画面確認用の模擬キーボード（ファームの応答を再現） ---- */
+  class MockDevice {
+    constructor(opts) {
+      const o = opts || {};
+      this.size = o.size || 1024; this.count = o.count || 16;
+      this.buf = new Uint8Array(this.size);
+      this.unlocked = false; this.inProgress = false; this.counter = 50;
+      this.step = o.step || 10;
+      this.writes = 0;
+      this.rows = o.rows || 4; this.cols = o.cols || 12;
+      this.keymap = JSON.parse(JSON.stringify(o.keymap || [[]])); this.enc = JSON.parse(JSON.stringify(o.enc || []));  /* 渡された配列を共有しない */
+      this.layerSupport = o.layerSupport !== false;
+      this.def = o.definition ? xzStore(new TextEncoder().encode(JSON.stringify(o.definition))) : new Uint8Array(0);
+      this.ls = 0; this.ds = 1; this.subscribed = false; this.onPush = null;
+      if (o.seed) { const d = joinMacros(o.seed.map(s => compile(s).bytes).concat(Array(this.count).fill(new Uint8Array(0))).slice(0, this.count)); this.buf.set(d); }
+    }
+    layerPacket(d, kind) {
+      d[0] = 0xF7; d[1] = kind; d[2] = 1; d[3] = highestLayer(this.ls | this.ds);
+      for (let i = 0; i < 4; i++) { d[4 + i] = (this.ls >>> (8 * i)) & 0xFF; d[8 + i] = (this.ds >>> (8 * i)) & 0xFF; }
+      d[12] = highestLayer(this.ds);
+      return d;
+    }
+    setLayerState(ls, ds) {
+      this.ls = ls >>> 0; this.ds = ds >>> 0;
+      if (this.subscribed && this.onPush) this.onPush(this.layerPacket(new Uint8Array(32), 2));
+    }
+    async send(pkt) {
+      const d = Uint8Array.from(pkt);
+      if (this.inProgress && !(d[0] === 0xFE && [0, 1, 2, 5, 6, 7].includes(d[1]))) return d;
+      switch (d[0]) {
+        case 0x01: d[1] = 0; d[2] = 9; break;
+        case 0x0C: d[1] = this.count; break;
+        case 0x05: if (this.keymap[d[1]] && this.keymap[d[1]][d[2]] && d[3] < this.cols) { this.keymap[d[1]][d[2]][d[3]] = (d[4] << 8) | d[5]; this.keyWrites = (this.keyWrites || 0) + 1; } break;
+        case 0x11: d[1] = this.keymap.length; break;
+        case 0x12: {
+          const off = (d[1] << 8) | d[2], sz = d[3], per = this.rows * this.cols;
+          if (sz <= 28) for (let i = 0; i < sz; i++) {
+            const idx = (off + i) >> 1, l = Math.floor(idx / per), rc = idx % per;
+            const kc = (this.keymap[l] && this.keymap[l][Math.floor(rc / this.cols)] && this.keymap[l][Math.floor(rc / this.cols)][rc % this.cols]) || 0;
+            d[4 + i] = ((off + i) & 1) ? (kc & 0xFF) : (kc >> 8);
+          }
+          break;
+        }
+        case 0xF7:
+          if (!this.layerSupport || d[1] !== 1) { d[0] = 0xFF; break; }
+          this.layerPacket(d, 1); this.subscribed = true; break;
+        case 0x0D: d[1] = this.size >> 8; d[2] = this.size & 0xFF; break;
+        case 0x0E: { const off = (d[1] << 8) | d[2], sz = d[3]; if (sz <= 28) for (let i = 0; i < sz; i++) d[4 + i] = off + i < this.size ? this.buf[off + i] : 0; break; }
+        case 0x0F: { if (!this.unlocked) break; const off = (d[1] << 8) | d[2], sz = d[3]; if (sz <= 28) { for (let i = 0; i < sz; i++) if (off + i < this.size) this.buf[off + i] = d[4 + i]; this.writes++; } break; }
+        case 0xFE:
+          switch (d[1]) {
+            case 0x00: d.fill(0); d[0] = 6; d.set([0x36, 0xC9, 0x6B, 0xC8, 0xD0, 0xDA, 0xF4, 0x86], 4); break;
+            case 0x01: { const n = this.def.length; d[0] = n & 0xFF; d[1] = (n >> 8) & 0xFF; d[2] = (n >> 16) & 0xFF; d[3] = 0; break; }
+            case 0x02: { const st0 = (d[2] | (d[3] << 8)) * 32; if (st0 < this.def.length) { const part = this.def.subarray(st0, st0 + 32); d.set(part, 0); } break; }
+            case 0x03: { const e = (this.enc[d[2]] && this.enc[d[2]][d[3]]) || [0, 0]; d[0] = e[0] >> 8; d[1] = e[0] & 0xFF; d[2] = e[1] >> 8; d[3] = e[1] & 0xFF; break; }
+            case 0x04: { let kc = (d[5] << 8) | d[6]; if (kc === 0x7C00 && !this.unlocked) kc = 0; if (this.enc[d[2]] && this.enc[d[2]][d[3]]) this.enc[d[2]][d[3]][d[4] ? 1 : 0] = kc; break; }
+            case 0x05: d.fill(0xFF); d[0] = this.unlocked ? 1 : 0; d[1] = this.inProgress ? 1 : 0; d[2] = 0; d[3] = 1; d[4] = 0; d[5] = 10; break;
+            case 0x06: this.inProgress = true; this.counter = 50; break;
+            case 0x07:
+              if (this.inProgress) { this.counter -= this.step; if (this.counter <= 0) { this.counter = 0; this.inProgress = false; this.unlocked = true; } }
+              d[0] = this.unlocked ? 1 : 0; d[1] = this.inProgress ? 1 : 0; d[2] = this.counter; break;
+            case 0x08: this.unlocked = false; break;
+          }
+          break;
+        default: d[0] = 0xFF;
+      }
+      return d;
+    }
+  }
+
+  return { KEYS, MAX_WAIT, isMod, keyName, resolveKey, parse, serialize, deserialize, format, compile, codeToken, splitMacros, joinMacros,
+    basicLabel, keyLabel, keycodeFromText, keycodeToText, matrixOrder, layerToText, layerFromText, layerFromVil, parseKle, toDefinition, effective, highestLayer, parseLayerState, crc32, xzDecompress, xzStore, Vial, MockDevice };
+})();
+if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
+</script>
+
+<script id="ui">
+(() => {
+  'use strict';
+  const C = JupiterCore;
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  const st = { vial: null, hid: null, mock: null, demo: false, macros: [], orig: [], sel: 0, capturing: false, heldMods: new Set() };
+
+  /* ---- WebHID ---- */
+  class HidTransport {
+    constructor(dev) {
+      this.dev = dev; this.waiter = null; this.onPush = null;
+      dev.addEventListener('inputreport', e => {
+        const d = new Uint8Array(e.data.buffer.slice(e.data.byteOffset, e.data.byteOffset + e.data.byteLength));
+        /* キーボード側から届くレイヤー変化の通知は、問い合わせの返事とは別に扱う */
+        if (d[0] === 0xF7 && d[1] === 0x02) { if (this.onPush) this.onPush(d); return; }
+        const w = this.waiter; if (!w) return;
+        this.waiter = null;
+        w(d);
+      });
+    }
+    async send(pkt) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const reply = new Promise((res, rej) => {
+          const timer = setTimeout(() => { this.waiter = null; rej(new Error('timeout')); }, 1000);
+          this.waiter = d => { clearTimeout(timer); res(d); };
+        });
+        await this.dev.sendReport(0, pkt);
+        try { return await reply; } catch (e) { await sleep(100); }
+      }
+      throw new Error('キーボードから応答がありません');
+    }
+  }
+
+  function toast(msg, ok) { const t = $('toast'); t.textContent = msg; t.className = ok ? 'ok' : 'ng'; }
+  function banner(msg) { const b = $('banner'); b.textContent = msg; b.hidden = !msg; }
+
+  if (!navigator.hid) {
+    $('btnConnect').disabled = true;
+    banner('このブラウザは WebHID に対応していないため、キーボードには接続できません。パソコンの Chrome か Edge で開いてください。「デモで試す」は使えます。');
+  } else {
+    navigator.hid.addEventListener('disconnect', e => {
+      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); }
+    });
+  }
+
+  async function connect() {
+    banner('');
+    try {
+      const devs = await navigator.hid.requestDevice({ filters: [{ usagePage: 0xFF60, usage: 0x61 }] });
+      if (!devs.length) return;
+      const dev = devs[0];
+      if (!dev.opened) await dev.open();
+      st.hid = dev; st.demo = false; st.mock = null;
+      await start(new HidTransport(dev), dev.productName || 'キーボード');
+    } catch (e) { banner('接続できませんでした: ' + e.message); }
+  }
+
+  async function startDemo() {
+    banner('');
+    st.hid = null; st.demo = true;
+    const seed = [
+      'SELECT *{ENTER}\nFROM {ENTER}\nWHERE {ENTER}\nORDER BY {UP*2}{END}',
+      '{LCTL+A}{LCTL+C}{WAIT:100}{LALT+TAB}{WAIT:300}{LCTL+V}',
+      'for (let i = 0; i < n; i++) {{{ENTER}\n}}{UP}{END}{ENTER}',
+      '{+LSFT}{RIGHT*5}{-LSFT}{LCTL+X}',
+    ];
+    const T = 'TRNS', X = 'NO';
+    const base = (mac) => [
+      ['USER3', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', mac ? 'MPLY' : 'MUTE'],
+      ['TAB', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'MINS', 'BSPC'],
+      ['LSFT', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'COMM', X, 'UP', mac ? 'LT(5,LBRC)' : 'LT(2,LBRC)'],
+      [mac ? 'LGUI' : 'LCTL', mac ? 'LCTL' : 'LGUI', 'LALT', mac ? 'LT(4,LNG2)' : 'LT(1,LNG2)', 'SPACE', X, 'ENTER', mac ? 'LT(4,LNG1)' : 'LT(1,LNG1)', X, 'LEFT', 'DOWN', 'RIGHT'],
+    ];
+    const num = [
+      ['USER3', 'F1', 'F2', 'F3', 'F4', 'F5', 'F7', 'F8', 'F9', 'F10', 'F11', T],
+      ['ESC', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'DEL'],
+      [T, 'EQL', 'INT3', 'RBRC', 'BSLS', 'SCLN', 'QUOT', 'SLSH', 'DOT', X, 'UP', T],
+      [T, T, T, 'LT(6,TRNS)', T, X, T, 'LT(6,TRNS)', X, 'LEFT', 'DOWN', 'RIGHT'],
+    ];
+    const nav = [
+      ['USER3', T, T, T, T, T, 'F6', T, 'INS', T, 'F12', T],
+      ['GRV', T, 'USER2', T, 'PSCR', T, T, T, T, 'LGUI+L', 'LSFT+INT1', 'DEL'],
+      [T, T, T, T, T, T, T, 'APP', T, X, 'PGUP', T],
+      ['CAPS', T, T, T, T, X, T, T, X, 'HOME', 'PGDN', 'END'],
+    ];
+    const mac6 = [['USER3', 'M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', T], Array(12).fill(T), [T, T, T, T, 'USER1', T, T, T, T, X, T, T], Array(12).fill(T)];
+    const none = [Array(12).fill(T), Array(12).fill(T), Array(12).fill(T), Array(12).fill(T)];
+    const keymap = [base(false), num, nav, base(true), num, nav, mac6, none].map(l => l.map(r => r.map(x => C.keycodeFromText(x))));
+    const e0 = ['WH_L', 'WH_R'].map(x => C.keycodeFromText(x)), e1 = ['VOLD', 'VOLU'].map(x => C.keycodeFromText(x)), tt = [1, 1];
+    const enc = [[e0, e1], [tt, tt], [tt, ['LCTL+LGUI+LEFT', 'LCTL+LGUI+RIGHT'].map(x => C.keycodeFromText(x))], [e0, e1], [tt, tt], [tt, ['LCTL+LEFT', 'LCTL+RIGHT'].map(x => C.keycodeFromText(x))], [tt, tt], [tt, tt]];
+    st.mock = new C.MockDevice({ seed, step: 5, keymap, enc, definition: JUPITER });
+    await start(st.mock, 'デモ（模擬キーボード）');
+  }
+
+  async function start(transport, name) {
+    const v = new C.Vial(transport);
+    try { await v.init(); } catch (e) { banner('接続できませんでした: ' + e.message); return; }
+    st.vial = v;
+    $('status').textContent = name + ' ／ マクロ ' + v.macroCount + ' 個 ／ 保存領域 ' + v.bufSize + ' バイト';
+    $('intro').hidden = true; $('modes').hidden = false;
+    D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
+    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null;
+    v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
+    setMode('macro');
+    $('btnSave').disabled = false; $('btnReload').disabled = false;
+    const s = await v.unlockStatus();
+    if (s.inProgress) await runUnlock();
+    await load();
+  }
+
+  async function load() {
+    const buf = await st.vial.readMacros();
+    const kept = layoutLoad();
+    const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+    st.macros = C.splitMacros(buf, st.vial.macroCount).map((b, i) => {
+      /* 前回この画面で書いたテキストが同じ内容なら、その改行位置のまま表示する */
+      if (typeof kept[i] === 'string') { const c = C.compile(kept[i]); if (!c.errors.length && same(c.bytes, b)) return kept[i]; }
+      return C.format(C.deserialize(b));
+    });
+    st.orig = st.macros.slice();
+    if (st.sel >= st.macros.length) st.sel = 0;
+    $('src').value = st.macros[st.sel];
+    refresh();
+  }
+
+  const layoutKey = () => 'jupiter-src-' + (st.demo ? 'demo' : (st.vial.uid || []).join('.'));
+  function layoutLoad() { try { const v = JSON.parse(localStorage.getItem(layoutKey()) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+  function layoutSave() { try { localStorage.setItem(layoutKey(), JSON.stringify(st.macros)); } catch (e) { /* 保存できなくても、読み直し時に自動整形されるだけ */ } }
+
+  /* ---- レイヤー表示モード ---- */
+  /* ogm10-Jupiter の配置（リポジトリの vial.json と同じ内容） */
+  const JUPITER = {
+    uid: [0x36, 0xC9, 0x6B, 0xC8, 0xD0, 0xDA, 0xF4, 0x86], name: 'ogm10-Jupiter', matrix: { rows: 4, cols: 12 },
+    customKeycodes: [
+      { name: 'MAC_SCREENSHOT', shortName: 'MacSS', title: 'Mac の範囲指定スクリーンショット（Shift+Cmd+Ctrl+4）。選んだ範囲をクリップボードにコピーします' },
+      { name: 'LAYER_INFO', shortName: 'LyrInfo', title: '接続先の OS で決まる基本レイヤーの説明を英文で入力します（Mac は 3、それ以外は 0）' },
+      { name: 'SQL_SELECT_TMP', shortName: 'SQLSel', title: '英数に切り替えてから SQL のひな形（Select * / From / Where 1=1 / Order by 1）を入力し、From の行末にカーソルを置きます' },
+      { name: 'LAYER_STATUS', shortName: 'LyrStat', title: '単押し: 今のレイヤーと基本レイヤーを文字で入力します（例: Layer 4 (default 3: macOS)）。押しながら Q W E R T Y U の位置: レイヤー 1〜7 に固定、P の位置: レイヤー 0 に固定。固定中は、押しながらどのキーを押しても解除します' },
+    ],
+    layouts: { keymap: [[{"w":0.75},"0,0",{"x":10.5,"w":0.75},"0,11"],[{"y":-0.75,"x":0.75},"0,1","0,2","0,3","0,4","0,5","0,6","0,7","0,8","0,9","0,10"],["1,0","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","1,10","1,11"],[{"w":1.5},"2,0","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8",{"x":0.5},"2,10","2,11"],["3,0",{"x":0.25},"3,1","3,2",{"x":0.25},"3,3",{"w":1.5},"3,4",{"w":1.5},"3,6","3,7",{"x":0.5},"3,9","3,10","3,11"],[{"y":0.25},"0,0\n\n\n\n\n\n\n\n\ne","0,1\n\n\n\n\n\n\n\n\ne",{"x":8},"1,0\n\n\n\n\n\n\n\n\ne","1,1\n\n\n\n\n\n\n\n\ne"]] },
+  };
+  const isJupiter = () => !!st.vial && JUPITER.uid.every((b, i) => st.vial.uid[i] === b);
+  const D = { def: null, defNote: '', keymap: null, enc: null, layers: 0, state: null, supported: null, pin: null, timer: null, busy: false, pip: null, mode: 'macro' };
+  /* 小窓に移しても参照できるよう、表示用の要素は最初に取っておく */
+  const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), pip: $('btnPip'), reload: $('btnKeymap') };
+
+  function setMode(m) {
+    if (st.capturing) setCapture(false);
+    D.mode = m;
+    $('tabMacro').classList.toggle('on', m === 'macro'); $('tabKeys').classList.toggle('on', m === 'keys'); $('tabDisp').classList.toggle('on', m === 'disp');
+    $('app').hidden = m !== 'macro'; $('bar').hidden = m !== 'macro'; $('keys').hidden = m !== 'keys'; $('disp').hidden = m !== 'disp';
+    /* 仮想キーボードは、マクロ編集ではフッター、キー割り当てでは編集欄の中に置く */
+    const vk = $('vk');
+    vkLatched.clear(); vkSync();
+    if (m === 'keys') { if (vk.parentNode !== $('kvk')) { K.vkHidden = vk.hidden; $('kvk').appendChild(vk); } vk.hidden = false; }
+    else if (vk.parentNode === $('kvk')) { $('bar').insertBefore(vk, $('bar').firstChild); vk.hidden = !!K.vkHidden; }
+    if (m === 'disp') dispEnter(); else dispWatch();
+    if (m === 'keys') keysEnter();
+  }
+  $('tabMacro').addEventListener('click', () => setMode('macro'));
+  $('tabKeys').addEventListener('click', () => setMode('keys'));
+  $('tabDisp').addEventListener('click', () => setMode('disp'));
+
+  async function dispLoadKeymap() {
+    const v = st.vial;
+    /* 配置とカスタムキーの説明は、キーボードに入っている定義から読む。読めないときだけ内蔵の Jupiter 用を使う */
+    D.defNote = '';
+    try { D.def = C.toDefinition(await v.readDefinition()); }
+    catch (e) {
+      if (!isJupiter()) throw new Error('キーボードから配置の定義を読めませんでした（' + e.message + '）');
+      D.def = C.toDefinition(JUPITER); D.defNote = '（定義を読めなかったため、内蔵の配置を使用）';
+    }
+    D.layers = await v.layerCount();
+    D.keymap = await v.readKeymap(D.layers, D.def.rows, D.def.cols);
+    D.enc = await v.readEncoders(D.layers, D.def.encoders);
+  }
+  async function dispEnter() {
+    if (!st.vial) return;
+    try {
+      if (!D.keymap) { E.status.textContent = '割り当てを読み込み中…'; await dispLoadKeymap(); }
+      await dispPoll();
+    } catch (e) { E.status.textContent = '読み込みに失敗: ' + e.message; return; }
+    dispRender(); dispWatch();
+  }
+  /* 表示中（または小窓を開いている間）だけ、1秒ごとに状態を問い合わせる。これが通知の申し込みも兼ねる */
+  function dispWatch() {
+    const want = !!st.vial && (D.mode === 'disp' || !!D.pip);
+    if (want && !D.timer) D.timer = setInterval(dispPoll, 1000);
+    if (!want && D.timer) { clearInterval(D.timer); D.timer = null; }
+  }
+  async function dispPoll() {
+    if (D.busy || !st.vial) return;
+    D.busy = true;
+    try {
+      const s = await st.vial.layerState();
+      if (s && s.supported === false) { if (D.supported !== false) { D.supported = false; if (D.pin === null) D.pin = 0; dispRender(); } }
+      else if (s) {
+        const changed = !D.state || D.state.layers !== s.layers || D.state.def !== s.def || D.supported !== true;
+        D.state = s; D.supported = true; if (changed) dispRender();
+      }
+    } catch (e) { /* 次の周期でやり直す */ }
+    finally { D.busy = false; }
+  }
+  function dispView() {
+    const def = D.state ? D.state.def : 1;
+    if (D.pin !== null) return { layers: (1 << D.pin) >>> 0, def, top: D.pin };
+    const layers = D.state ? D.state.layers : 0;
+    return { layers, def, top: C.highestLayer((layers | def) >>> 0) };
+  }
+  function dispRender() {
+    if (!D.keymap || !D.def) return;
+    const LAYOUT = D.def.layout;
+    const view = dispView(), mask = (view.layers | view.def) >>> 0;
+    const doc = E.board.ownerDocument;
+    E.layer.textContent = 'レイヤー ' + view.top;
+    E.chips.textContent = '';
+    for (let l = 0; l < D.layers; l++) {
+      const b = doc.createElement('button');
+      const isDef = (view.def >>> l) & 1;
+      b.className = 'lchip' + (((mask >>> l) & 1) ? ' on' : '') + (isDef ? ' def' : '') + (D.pin === l ? ' pin' : '');
+      b.textContent = l; b.title = isDef ? '基本レイヤー' : '';
+      b.addEventListener('click', () => chipClick(l));
+      E.chips.appendChild(b);
+    }
+    E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は基本レイヤーの切り替え）'
+      : D.supported === false ? 'このファームウェアはレイヤー通知に未対応です。番号をクリックして表示を切り替えてください。'
+      : D.pin !== null ? 'レイヤー ' + D.pin + ' を固定表示中（もう一度クリックすると追従に戻ります）'
+      : 'キーボードのレイヤーに追従中（番号をクリックすると固定表示）';
+    if (D.defNote) E.status.textContent += ' ' + D.defNote;
+    const ctx = { macros: st.macros, custom: D.def.custom };
+    const notes = new Map();
+    E.board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
+    E.board.textContent = '';
+    for (const k of LAYOUT.keys) {
+      const per = [];
+      for (let l = 0; l < D.layers; l++) per.push(k.enc !== undefined ? D.enc[l][k.enc][k.dir] : D.keymap[l][k.row][k.col]);
+      const eff = C.effective(per, mask), lab = C.keyLabel(eff.kc, ctx);
+      const el = doc.createElement('div');
+      el.className = 'k ' + lab.kind + (eff.layer !== view.top && lab.kind !== 'none' ? ' low' : '') + (k.enc !== undefined ? ' enc' : '');
+      el.style.left = (k.x / LAYOUT.width * 100) + '%'; el.style.top = (k.y / LAYOUT.height * 100) + '%';
+      el.style.width = (k.w / LAYOUT.width * 100) + '%'; el.style.height = (k.h / LAYOUT.height * 100) + '%';
+      const box = doc.createElement('div');
+      const main = (k.enc !== undefined ? (k.dir ? '↻ ' : '↺ ') : '') + lab.main;
+      const m = doc.createElement('span'); m.className = 'm' + (main.length > 4 * k.w ? ' long' : ''); m.textContent = main;
+      box.appendChild(m);
+      if (lab.shift) { const t = doc.createElement('span'); t.className = 't'; t.textContent = lab.shift; t.title = 'Shift を押しながら打つと出る文字'; box.appendChild(t); }
+      if (lab.sub) { const sub = doc.createElement('span'); sub.className = 's'; sub.textContent = lab.sub; box.appendChild(sub); }
+      el.title = (lab.desc ? lab.main + ': ' + lab.desc + '\n' : '') + 'レイヤー ' + eff.layer + ' の割り当て';
+      if (lab.desc && lab.desc !== '（空）' && !notes.has(lab.kind + lab.id)) notes.set(lab.kind + lab.id, lab);  /* 空のマクロは凡例に出さない */
+      el.appendChild(box); E.board.appendChild(el);
+    }
+    /* 凡例: いま盤面に出ているカスタムキーとマクロの説明（カスタムキーを先に並べる） */
+    E.legend.textContent = '';
+    const rows = [...notes.values()].sort((a, b) => (a.kind === b.kind ? a.id - b.id : a.kind === 'custom' ? -1 : 1));
+    for (const lab of rows) {
+      const dt = doc.createElement('dt'); dt.className = lab.kind; dt.textContent = lab.main;
+      const dd = doc.createElement('dd'); dd.textContent = lab.desc;
+      E.legend.append(dt, dd);
+    }
+    E.legend.hidden = !rows.length;
+  }
+  function chipClick(l) {
+    if (st.demo && st.mock) {
+      const m = st.mock;
+      if (l === 0 || l === 3) m.setLayerState(0, 1 << l); else m.setLayerState(m.ls ^ (1 << l), m.ds);
+      if (!m.subscribed) dispPoll();
+      return;
+    }
+    D.pin = (D.pin === l && D.supported !== false) ? null : l;
+    dispRender();
+  }
+  E.reload.addEventListener('click', async () => {
+    try { E.status.textContent = '割り当てを読み込み中…'; await dispLoadKeymap(); dispRender(); } catch (e) { E.status.textContent = '読み込みに失敗: ' + e.message; }
+  });
+
+  /* ---- キー割り当ての編集 ---- */
+  const K = { layer: 0, sel: 0, edit: null, encEdit: null, vil: null, vkHidden: false };
+  const clone = x => JSON.parse(JSON.stringify(x));
+  function kToast(msg, ok) { const t = $('kToast'); t.textContent = msg; t.className = ok ? 'ok' : 'ng'; }
+  const kKeys = () => D.def.layout.keys;
+  /* 見た目の順（上から下、左から右）。「次のキーへ進む」で使う */
+  const kOrder = () => kKeys().map((k, i) => i).sort((a, b) => kKeys()[a].y - kKeys()[b].y || kKeys()[a].x - kKeys()[b].x);
+  const kGet = (src, encSrc, layer, k) => (k.enc !== undefined ? encSrc[layer][k.enc][k.dir] : src[layer][k.row][k.col]);
+  const kVal = (layer, k) => kGet(K.edit, K.encEdit, layer, k);
+  const kBase = (layer, k) => kGet(D.keymap, D.enc, layer, k);
+  function kSet(layer, k, kc) { if (k.enc !== undefined) K.encEdit[layer][k.enc][k.dir] = kc; else K.edit[layer][k.row][k.col] = kc; }
+  function keysChanges() {
+    const out = [];
+    if (!K.edit || !D.keymap) return out;
+    for (let l = 0; l < D.layers; l++) for (const k of kKeys()) {
+      const kc = kVal(l, k);
+      if (kc !== kBase(l, k)) out.push(Object.assign({ layer: l, kc }, k));
+    }
+    return out;
+  }
+  async function keysEnter() {
+    if (!st.vial) return;
+    try {
+      if (!D.keymap) { $('kStatus').textContent = '割り当てを読み込み中…'; await dispLoadKeymap(); }
+    } catch (e) { $('kStatus').textContent = '読み込みに失敗: ' + e.message; return; }
+    if (!K.edit) { K.edit = clone(D.keymap); K.encEdit = clone(D.enc); }
+    const layers = [...Array(D.layers).keys()];
+    for (const id of ['kLtLayer', 'kOpLayer']) {
+      const sel = $(id), keep = sel.value; sel.textContent = '';
+      layers.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'レイヤー ' + l; sel.appendChild(o); });
+      sel.value = keep !== '' && Number(keep) < D.layers ? keep : (D.layers > 1 ? '1' : '0');
+    }
+    const sp = $('kSpecial'); sp.textContent = '';
+    const group = (label, items) => {
+      if (!items.length) return;
+      const g = document.createElement('optgroup'); g.label = label;
+      items.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; g.appendChild(o); });
+      sp.appendChild(g);
+    };
+    group('マクロ', st.macros.map((src, i) => ['M' + i, 'M' + i + (src ? '  ' + src.replace(/\s+/g, ' ').slice(0, 28) : '  （空）')]));
+    group('専用キー', D.def.custom.map((c, i) => [c.name || ('USER' + i), c.short + (c.title ? '  ' + c.title.slice(0, 30) : '')]));
+    group('マウス', [['BTN1', '左クリック'], ['BTN2', '右クリック'], ['BTN3', '中クリック'], ['BTN4', 'ボタン4'], ['BTN5', 'ボタン5'],
+      ['WH_U', 'ホイール↑'], ['WH_D', 'ホイール↓'], ['WH_L', 'ホイール←'], ['WH_R', 'ホイール→'], ['MS_U', 'カーソル↑'], ['MS_D', 'カーソル↓'], ['MS_L', 'カーソル←'], ['MS_R', 'カーソル→']]);
+    group('その他', [['BOOT', 'ブートローダーに入る'], ['REBOOT', '再起動'], ['DM_REC1', 'その場マクロ1 記録開始'], ['DM_REC2', 'その場マクロ2 記録開始'], ['DM_RSTP', 'その場マクロ 記録停止'],
+      ['DM_PLY1', 'その場マクロ1 再生'], ['DM_PLY2', 'その場マクロ2 再生'], ['CW_TOGG', 'Caps Word'], ['GESC', 'Esc（Shift/GUI で `）'], ['OSM(LSFT)', '次の1打だけ Shift'], ['OSM(LCTL)', '次の1打だけ Ctrl']]);
+    if (K.layer >= D.layers) K.layer = 0;
+    if (K.sel >= kKeys().length) K.sel = 0;
+    keysRender(); keysShowSel();
+    if ($('kTextBox').open) keysTextShow();
+  }
+  function keysRender() {
+    if (!K.edit || !D.def) return;
+    const LAYOUT = D.def.layout, ctx = { macros: st.macros, custom: D.def.custom };
+    const changes = keysChanges(), changedLayers = new Set(changes.map(c => c.layer));
+    const tabs = $('kTabs'); tabs.textContent = '';
+    for (let l = 0; l < D.layers; l++) {
+      const b = document.createElement('button');
+      b.className = 'lchip' + (l === K.layer ? ' on' : '') + (changedLayers.has(l) ? ' chg' : '');
+      b.textContent = l;
+      b.addEventListener('click', () => { K.layer = l; keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); });
+      tabs.appendChild(b);
+    }
+    $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
+    const board = $('kboard');
+    board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
+    board.textContent = '';
+    LAYOUT.keys.forEach((k, i) => {
+      const kc = kVal(K.layer, k), lab = C.keyLabel(kc, ctx);
+      let sub = lab.sub;
+      if (kc === 1) {
+        /* 透過キーは、下のレイヤーで実際に効く割り当てを小さく添える */
+        let below = 1;
+        for (let l = K.layer - 1; l >= 0 && below === 1; l--) below = kVal(l, k);
+        if (below !== 1 && K.layer > 0) { const bl = C.keyLabel(below, ctx); sub = '↓ ' + (bl.main || bl.sub); }
+      }
+      const el = document.createElement('div');
+      el.className = 'k ' + lab.kind + (k.enc !== undefined ? ' enc' : '') + (i === K.sel ? ' sel' : '') + (kc !== kBase(K.layer, k) ? ' chg' : '') + (kc === 1 ? ' low' : '');
+      el.style.left = (k.x / LAYOUT.width * 100) + '%'; el.style.top = (k.y / LAYOUT.height * 100) + '%';
+      el.style.width = (k.w / LAYOUT.width * 100) + '%'; el.style.height = (k.h / LAYOUT.height * 100) + '%';
+      const box = document.createElement('div');
+      const main = (k.enc !== undefined ? (k.dir ? '↻ ' : '↺ ') : '') + lab.main;
+      const m = document.createElement('span'); m.className = 'm' + (main.length > 4 * k.w ? ' long' : ''); m.textContent = main; box.appendChild(m);
+      if (lab.shift) { const t = document.createElement('span'); t.className = 't'; t.textContent = lab.shift; box.appendChild(t); }
+      if (sub) { const sp = document.createElement('span'); sp.className = 's'; sp.textContent = sub; box.appendChild(sp); }
+      el.title = C.keycodeToText(kc, D.def.custom) + (lab.desc ? '\n' + lab.desc : '');
+      el.addEventListener('click', () => { K.sel = i; keysRender(); keysShowSel(); });
+      el.appendChild(box); board.appendChild(el);
+    });
+  }
+  /* 選択中のキーの名前と現在値を、入力欄に出す */
+  function keysShowSel() {
+    if (!K.edit) return;
+    const k = kKeys()[K.sel];
+    $('kSel').textContent = 'レイヤー ' + K.layer + ' ／ ' + (k.enc !== undefined ? 'エンコーダー ' + k.enc + (k.dir ? ' 時計回り' : ' 反時計回り') : '行 ' + k.row + '・列 ' + k.col);
+    $('kText').value = C.keycodeToText(kVal(K.layer, k), D.def.custom);
+  }
+  function keysAssign(kc, stay) {
+    if (!K.edit) return;
+    kSet(K.layer, kKeys()[K.sel], kc);
+    kToast('', true);
+    if (!stay && $('kAdvance').checked) { const order = kOrder(), at = order.indexOf(K.sel); K.sel = order[(at + 1) % order.length]; }
+    keysRender(); keysShowSel();
+  }
+  function keysAssignText(text, stay) {
+    let kc;
+    try { kc = C.keycodeFromText(text, D.def.custom); } catch (e) { kToast(e.message, false); return false; }
+    keysAssign(kc, stay); return true;
+  }
+  $('kApply').addEventListener('click', () => keysAssignText($('kText').value));
+  $('kText').addEventListener('keydown', e => { if (e.key === 'Enter' && !st.capturing) { e.preventDefault(); keysAssignText($('kText').value); } });
+  $('kTrns').addEventListener('click', () => keysAssign(1));
+  $('kNo').addEventListener('click', () => keysAssign(0));
+  $('kRevert').addEventListener('click', () => keysAssign(kBase(K.layer, kKeys()[K.sel]), true));
+  $('kCapture').addEventListener('click', () => setCapture(!st.capturing));
+  /* 今の割り当てからタップ側のキーを取り出す（長押し付きなら外側を外す） */
+  function keysTapPart() {
+    const kc = kVal(K.layer, kKeys()[K.sel]);
+    if (kc < 0x100) return kc;
+    if (kc >= 0x2000 && kc < 0x5000) return kc & 0xFF;
+    kToast('長押しは、単独のキーにだけ足せます（今の割り当て: ' + C.keycodeToText(kc, D.def.custom) + '）', false);
+    return null;
+  }
+  $('kLt').addEventListener('click', () => { const tap = keysTapPart(); if (tap !== null) keysAssign(0x4000 | (Number($('kLtLayer').value) << 8) | tap, true); });
+  $('kMt').addEventListener('click', () => {
+    const tap = keysTapPart(); if (tap === null) return;
+    const bits = ($('kmCtl').checked ? 1 : 0) | ($('kmSft').checked ? 2 : 0) | ($('kmAlt').checked ? 4 : 0) | ($('kmGui').checked ? 8 : 0);
+    if (!bits) { kToast('長押しで効かせる修飾キーを選んでください', false); return; }
+    keysAssign(0x2000 | (bits << 8) | tap, true);
+  });
+  $('kPlain').addEventListener('click', () => { const tap = keysTapPart(); if (tap !== null) keysAssign(tap, true); });
+  $('kOpSet').addEventListener('click', () => keysAssign(0x5200 + Number($('kOp').value) * 32 + Number($('kOpLayer').value)));
+  $('kSpecialSet').addEventListener('click', () => keysAssignText($('kSpecial').value));
+  /* 仮想キーボードからの割り当て */
+  function keysVk(name) {
+    if (MOD_ORDER.includes(name) && $('kHold').checked) { if (vkLatched.has(name)) vkLatched.delete(name); else vkLatched.add(name); vkSync(); return; }
+    const mods = MOD_ORDER.filter(m => vkLatched.has(m));
+    vkLatched.clear(); vkSync();
+    keysAssignText(mods.concat([name]).join('+'));
+  }
+  /* レイヤー全体のテキスト編集 */
+  function keysTextShow() { $('kLayerText').value = C.layerToText(D.def, K.edit[K.layer], K.encEdit[K.layer], D.def.custom); }
+  function keysApplyLayer(parsed) {
+    parsed.keys.forEach(k => { K.edit[K.layer][k.row][k.col] = k.kc; });
+    parsed.enc.forEach((e, i) => { if (e && K.encEdit[K.layer][i]) K.encEdit[K.layer][i] = e.slice(0, 2); });
+    keysRender(); keysShowSel();
+  }
+  $('kTextBox').addEventListener('toggle', () => { if ($('kTextBox').open && K.edit) keysTextShow(); });
+  $('kTextShow').addEventListener('click', keysTextShow);
+  $('kTextApply').addEventListener('click', () => {
+    try { keysApplyLayer(C.layerFromText($('kLayerText').value, D.def, D.def.custom)); kToast('レイヤー ' + K.layer + ' に反映しました（キーボードへの書き込みはまだです）', true); }
+    catch (e) { kToast(e.message, false); }
+  });
+  $('kVilPick').addEventListener('click', () => $('kVilFile').click());
+  $('kVilFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const vil = JSON.parse(await f.text());
+      if (!Array.isArray(vil.layout)) throw new Error('Vial の保存ファイルではありません');
+      K.vil = vil;
+      const sel = $('kVilLayer'); sel.textContent = '';
+      vil.layout.forEach((x, l) => { const o = document.createElement('option'); o.value = l; o.textContent = '保存ファイルのレイヤー ' + l; sel.appendChild(o); });
+      sel.value = String(Math.min(K.layer, vil.layout.length - 1));
+      sel.hidden = false; $('kVilUse').hidden = false;
+      kToast(f.name + ' を読み込みました。取り込むレイヤーを選んでください', true);
+    } catch (err) { kToast('読み込めませんでした: ' + err.message, false); }
+  });
+  $('kVilUse').addEventListener('click', () => {
+    try {
+      const p = C.layerFromVil(K.vil, Number($('kVilLayer').value), D.def, D.def.custom);
+      const km = clone(K.edit[K.layer]); p.keys.forEach(k => { km[k.row][k.col] = k.kc; });
+      const en = clone(K.encEdit[K.layer]); p.enc.forEach((x, i) => { if (en[i]) en[i] = x; });
+      $('kLayerText').value = C.layerToText(D.def, km, en, D.def.custom);
+      kToast('下の欄に入れました。内容を確かめて「レイヤーに反映」を押してください', true);
+    } catch (err) { kToast(err.message, false); }
+  });
+  async function keysSave() {
+    const v = st.vial; if (!v || !K.edit) return;
+    const ch = keysChanges();
+    if (!ch.length) { kToast('変更はありません', true); return; }
+    $('kSave').disabled = true;
+    try {
+      /* エンコーダーへのブートローダー割り当てだけは、ロック中だとファームに拒否される */
+      if (ch.some(c => c.enc !== undefined && c.kc === 0x7C00) && !(await runUnlock())) { kToast('ロックを解除できませんでした', false); return; }
+      for (const c of ch) { if (c.enc !== undefined) await v.setEncoder(c.layer, c.enc, c.dir, c.kc); else await v.setKeycode(c.layer, c.row, c.col, c.kc); }
+      D.keymap = await v.readKeymap(D.layers, D.def.rows, D.def.cols);
+      D.enc = await v.readEncoders(D.layers, D.def.encoders);
+      const left = keysChanges().length;
+      if (left) kToast(left + ' 件が書き込めていません（読み戻した内容と一致しません）', false); else kToast(ch.length + ' 件を書き込みました', true);
+    } catch (e) { kToast('書き込みに失敗: ' + e.message, false); }
+    finally { $('kSave').disabled = false; keysRender(); keysShowSel(); }
+  }
+  $('kSave').addEventListener('click', keysSave);
+  $('kReload').addEventListener('click', async () => {
+    if (keysChanges().length && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
+    try { await dispLoadKeymap(); K.edit = clone(D.keymap); K.encEdit = clone(D.enc); keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); kToast('読み直しました', true); }
+    catch (e) { kToast('読み込みに失敗: ' + e.message, false); }
+  });
+
+  /* 他のアプリの上に浮かせる小窓（対応ブラウザのみ） */
+  if ('documentPictureInPicture' in window) {
+    E.pip.hidden = false;
+    E.pip.addEventListener('click', async () => {
+      try {
+        const w = await window.documentPictureInPicture.requestWindow({ width: 760, height: 400 });
+        document.querySelectorAll('style').forEach(s => w.document.head.appendChild(s.cloneNode(true)));
+        w.document.body.classList.add('pip');
+        w.document.body.appendChild(E.body);
+        D.pip = w; dispRender(); dispWatch();
+        w.addEventListener('pagehide', () => { $('disp').appendChild(E.body); D.pip = null; dispRender(); dispWatch(); });
+      } catch (e) { E.status.textContent = '小窓を開けませんでした: ' + e.message; }
+    });
+  }
+
+  /* ---- 表示 ---- */
+  function describe(a) {
+    if (a.t === 'text') return { cls: '', label: a.s.replace(/\t/g, '⇥') };
+    if (a.t === 'wait') return { cls: 'wait', label: a.ms + ' ms 待機' };
+    const tok = C.codeToken(a.kc);
+    const k = a.kc < 0x100 ? C.KEYS.find(x => x.code === a.kc) : null;
+    const jis = k && k.jis ? '〔' + k.jis + '〕' : '';
+    if (a.t === 'tap') return { cls: 'key', label: tok + jis };
+    return { cls: 'key hold', label: (a.t === 'down' ? '押す ' : '離す ') + tok + jis };
+  }
+
+  function refresh() {
+    const v = st.vial; if (!v) return;
+    const comp = st.macros.map(s => C.compile(s));
+    const list = $('list'); list.textContent = '';
+    comp.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'item' + (i === st.sel ? ' sel' : '') + (c.errors.length ? ' err' : '');
+      const id = document.createElement('span'); id.className = 'id'; id.textContent = 'M' + i;
+      const pv = document.createElement('span'); pv.className = 'pv'; pv.textContent = st.macros[i].replace(/\n/g, '').slice(0, 40) || '（空）';
+      const sz = document.createElement('span'); sz.className = 'sz';
+      sz.textContent = c.errors.length ? 'エラー' : (c.bytes.length ? c.bytes.length + ' B' : '');
+      if (st.macros[i] !== st.orig[i]) { const d = document.createElement('span'); d.className = 'dot'; d.textContent = ' ●'; d.title = '未保存の変更'; sz.appendChild(d); }
+      b.append(id, pv, sz);
+      b.addEventListener('click', () => { st.sel = i; $('src').value = st.macros[i]; refresh(); $('src').focus(); });
+      list.appendChild(b);
+    });
+
+    const cur = comp[st.sel];
+    $('edTitle').textContent = 'M' + st.sel;
+    $('edSize').textContent = cur.bytes.length + ' バイト';
+    const el = $('errors'); el.textContent = '';
+    cur.errors.forEach(e => {
+      const li = document.createElement('li');
+      const line = st.macros[st.sel].slice(0, e.pos).split('\n').length;
+      li.textContent = line + ' 行目: ' + e.msg;
+      li.addEventListener('click', () => { const ta = $('src'); ta.focus(); ta.setSelectionRange(e.pos, e.pos + e.len); });
+      el.appendChild(li);
+    });
+    const pv = $('preview'); pv.textContent = '';
+    cur.actions.forEach(a => {
+      const d = describe(a), s = document.createElement('span');
+      s.className = 'chip ' + d.cls; s.textContent = d.label; pv.appendChild(s);
+    });
+
+    const used = comp.reduce((n, c) => n + c.bytes.length + 1, 0);
+    const m = $('meter');
+    m.classList.toggle('over', used > v.bufSize);
+    m.querySelector('.fill').style.width = Math.min(100, used / v.bufSize * 100) + '%';
+    m.querySelector('.txt').textContent = '使用量 ' + used + ' / ' + v.bufSize + ' バイト' + (used > v.bufSize ? '（超過しています）' : '');
+    return { comp, used };
+  }
+
+  /* ---- 編集 ---- */
+  const ta = $('src');
+  ta.addEventListener('input', () => { st.macros[st.sel] = ta.value; refresh(); });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !st.capturing && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); insert('\t'); }
+  });
+  ta.addEventListener('paste', e => {
+    const esc = $('optEscape').checked, ind = $('optIndent').checked, ent = $('optEnter').checked;
+    if (!esc && !ind && !ent) return;
+    let text = (e.clipboardData || window.clipboardData).getData('text');
+    if (text === '') return;
+    e.preventDefault();
+    text = text.replace(/\r\n?/g, '\n');
+    if (ind) text = text.replace(/^[ \t]+/gm, '');
+    if (esc) text = text.replace(/\{/g, '{{').replace(/\}/g, '}}');
+    if (ent) text = text.replace(/\n/g, '{ENTER}\n');
+    insert(text);
+  });
+
+  function insert(text) {
+    ta.focus();
+    let done = false;
+    try { done = document.execCommand('insertText', false, text); } catch (e) { done = false; }
+    if (!done) { ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end'); }
+    st.macros[st.sel] = ta.value; refresh();
+  }
+
+  const dl = $('keyList');
+  C.KEYS.forEach(k => { const o = document.createElement('option'); o.value = k.name; if (k.jis) o.label = k.name + '  ' + k.jis; dl.appendChild(o); });
+
+  function builderMods() {
+    const m = [];
+    if ($('mCtl').checked) m.push('LCTL');
+    if ($('mSft').checked) m.push('LSFT');
+    if ($('mAlt').checked) m.push('LALT');
+    if ($('mGui').checked) m.push('LGUI');
+    return m;
+  }
+  function builderKey() {
+    const raw = $('keyName').value.trim();
+    if (!raw) return null;
+    const kc = C.resolveKey(raw);
+    if (kc === null) { toast('キー名が分かりません: ' + raw, false); return undefined; }
+    return C.codeToken(kc);
+  }
+  $('btnInsKey').addEventListener('click', () => {
+    const k = builderKey(); if (k === undefined) return;
+    const parts = builderMods(); if (k) parts.push(k);
+    if (!parts.length) { toast('修飾キーかキー名を指定してください', false); return; }
+    toast('', true); insert('{' + parts.join('+') + '}');
+  });
+  function insertHold(sign) {
+    const k = builderKey(); if (k === undefined) return;
+    const parts = builderMods(); if (k) parts.push(k);
+    if (!parts.length) { toast('修飾キーかキー名を指定してください', false); return; }
+    toast('', true);
+    const seq = sign === '-' ? parts.slice().reverse() : parts;
+    insert(seq.map(p => '{' + sign + p + '}').join(''));
+  }
+  $('btnInsDown').addEventListener('click', () => insertHold('+'));
+  $('btnInsUp').addEventListener('click', () => insertHold('-'));
+  $('btnInsWait').addEventListener('click', () => {
+    const ms = Math.round(Number($('waitMs').value));
+    if (!(ms >= 0 && ms <= C.MAX_WAIT)) { toast('待機は 0〜' + C.MAX_WAIT + ' ms です', false); return; }
+    toast('', true); insert('{WAIT:' + ms + '}');
+  });
+  $('btnClear').addEventListener('click', () => { ta.value = ''; st.macros[st.sel] = ''; refresh(); ta.focus(); });
+
+  /* ---- キー入力の取り込み ---- */
+  const CODE = {
+    Enter: 'ENTER', Escape: 'ESC', Backspace: 'BSPC', Tab: 'TAB', Space: 'SPACE', Minus: 'MINS', Equal: 'EQL',
+    BracketLeft: 'LBRC', BracketRight: 'RBRC', Backslash: 'BSLS', IntlHash: 'NUHS', Semicolon: 'SCLN', Quote: 'QUOT',
+    Backquote: 'GRV', Comma: 'COMM', Period: 'DOT', Slash: 'SLSH', CapsLock: 'CAPS', PrintScreen: 'PSCR',
+    ScrollLock: 'SCRL', Pause: 'PAUS', Insert: 'INS', Home: 'HOME', PageUp: 'PGUP', Delete: 'DEL', End: 'END',
+    PageDown: 'PGDN', ArrowRight: 'RIGHT', ArrowLeft: 'LEFT', ArrowDown: 'DOWN', ArrowUp: 'UP', NumLock: 'NUM',
+    NumpadDivide: 'PSLS', NumpadMultiply: 'PAST', NumpadSubtract: 'PMNS', NumpadAdd: 'PPLS', NumpadEnter: 'PENT',
+    NumpadDecimal: 'PDOT', IntlBackslash: 'NUBS', ContextMenu: 'APP', IntlRo: 'INT1', KanaMode: 'INT2',
+    IntlYen: 'INT3', Convert: 'INT4', NonConvert: 'INT5', Lang1: 'LNG1', Lang2: 'LNG2',
+  };
+  const MODCODE = { ControlLeft: 'LCTL', ShiftLeft: 'LSFT', AltLeft: 'LALT', MetaLeft: 'LGUI', ControlRight: 'RCTL', ShiftRight: 'RSFT', AltRight: 'RALT', MetaRight: 'RGUI' };
+  function codeToName(code) {
+    let m;
+    if ((m = /^Key([A-Z])$/.exec(code))) return m[1];
+    if ((m = /^Digit(\d)$/.exec(code))) return m[1];
+    if ((m = /^Numpad(\d)$/.exec(code))) return 'P' + m[1];
+    if ((m = /^F(\d{1,2})$/.exec(code))) return 'F' + m[1];
+    return CODE[code] || null;
+  }
+  function setCapture(on) {
+    st.capturing = on; st.heldMods.clear();
+    for (const b of [$('btnCapture'), $('kCapture')]) {
+      b.classList.toggle('on', on);
+      b.textContent = on ? '取り込み中（クリックで終了）' : 'キー入力を取り込む';
+    }
+    if (D.mode === 'keys') { if (on) { document.activeElement && document.activeElement.blur(); kToast('キーを押すと、その組み合わせが選択中のキーに割り当てられます', true); } else kToast('', true); return; }
+    if (on) { ta.focus(); toast('キーを押すと、その組み合わせが書き込まれます', true); } else toast('', true);
+  }
+  $('btnCapture').addEventListener('click', () => setCapture(!st.capturing));
+  window.addEventListener('keydown', e => {
+    if (!st.capturing) return;
+    e.preventDefault(); e.stopPropagation();
+    if (MODCODE[e.code]) { st.heldMods.add(MODCODE[e.code]); return; }
+    if (e.repeat) return;
+    const name = codeToName(e.code);
+    if (!name) { (D.mode === 'keys' ? kToast : toast)('このキーは取り込めません: ' + e.code, false); return; }
+    const order = ['LCTL', 'RCTL', 'LSFT', 'RSFT', 'LALT', 'RALT', 'LGUI', 'RGUI'];
+    const mods = order.filter(m => st.heldMods.has(m));
+    const flags = [[e.ctrlKey, 'CTL'], [e.shiftKey, 'SFT'], [e.altKey, 'ALT'], [e.metaKey, 'GUI']];
+    flags.forEach(([f, n]) => { if (f && !mods.some(m => m.endsWith(n))) mods.push('L' + n); });
+    const sorted = order.filter(m => mods.includes(m));
+    if (D.mode === 'keys') keysAssignText(sorted.concat([name]).join('+')); else insert('{' + sorted.concat([name]).join('+') + '}');
+  }, true);
+  window.addEventListener('keyup', e => {
+    if (!st.capturing) return;
+    e.preventDefault(); e.stopPropagation();
+    if (MODCODE[e.code]) st.heldMods.delete(MODCODE[e.code]);
+  }, true);
+  window.addEventListener('blur', () => st.heldMods.clear());
+
+  /* ---- 仮想キーボード（JIS配列） ---- */
+  const VK_LABEL = {
+    ESC: 'Esc', GRV: '半/全', BSPC: 'BS', TAB: 'Tab', ENTER: 'Enter', CAPS: 'Caps', SPACE: 'Space',
+    LCTL: 'Ctrl', LSFT: 'Shift', LALT: 'Alt', LGUI: 'GUI', RCTL: 'Ctrl', RSFT: 'Shift', RALT: 'Alt', RGUI: 'GUI',
+    INT1: 'ろ', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', APP: 'App', NUHS: ']',
+    PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
+    MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲',
+    BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', LNG2: '英数', LNG1: 'かな', PWR: '電源', SLEP: 'スリープ',
+  };
+  const VK_MAIN = [
+    ['ESC', 1, 'F1', 'F2', 'F3', 'F4', 0.5, 'F5', 'F6', 'F7', 'F8', 0.5, 'F9', 'F10', 'F11', 'F12'],
+    ['GRV', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'MINS', 'EQL', 'INT3', 'BSPC'],
+    [['TAB', 1.5], 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'LBRC', 'RBRC', ['ENTER', 1.5]],
+    [['CAPS', 1.75], 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'SCLN', 'QUOT', 'NUHS', ['ENTER', 1.25]],
+    [['LSFT', 2.25], 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'COMM', 'DOT', 'SLSH', 'INT1', ['RSFT', 1.75]],
+    [['LCTL', 1.25], ['LGUI', 1.25], ['LALT', 1.25], ['INT5', 1.25], ['SPACE', 3.5], ['INT4', 1.25], ['INT2', 1.25], 'RALT', 'RGUI', 'APP', 'RCTL'],
+  ];
+  const VK_NAV = [
+    ['PSCR', 'SCRL', 'PAUS'], ['INS', 'HOME', 'PGUP'], ['DEL', 'END', 'PGDN'], [3], [1, 'UP', 1], ['LEFT', 'DOWN', 'RIGHT'],
+  ];
+  const VK_EXTRA = [
+    ['MUTE', 'VOLD', 'VOLU'], ['MPRV', 'MPLY', 'MNXT'], ['BRID', 'BRIU', 'CALC'], ['LNG2', 'LNG1', 1], ['F13', 'F14', 'F15'], ['PWR', 'SLEP', 1],
+  ];
+  const MOD_ORDER = ['LCTL', 'RCTL', 'LSFT', 'RSFT', 'LALT', 'RALT', 'LGUI', 'RGUI'];
+  const vkLatched = new Set();
+  const vkModButtons = [];
+
+  function vkMode() { return document.querySelector('input[name=vkMode]:checked').value; }
+  function vkSync() { vkModButtons.forEach(([n, b]) => b.classList.toggle('on', vkLatched.has(n))); }
+  function vkPress(name) {
+    if (D.mode === 'keys') { keysVk(name); return; }
+    const mode = vkMode();
+    if (mode === 'tap') {
+      if (MOD_ORDER.includes(name)) { if (vkLatched.has(name)) vkLatched.delete(name); else vkLatched.add(name); vkSync(); return; }
+      const mods = MOD_ORDER.filter(m => vkLatched.has(m));
+      vkLatched.clear(); vkSync();
+      insert('{' + mods.concat([name]).join('+') + '}');
+    } else {
+      insert('{' + (mode === 'down' ? '+' : '-') + name + '}');
+    }
+  }
+  function vkBuild() {
+    const root = $('vkKeys');
+    [[VK_MAIN, 15], [VK_NAV, 3], [VK_EXTRA, 3]].forEach(([rows, units]) => {
+      const block = document.createElement('div'); block.className = 'vkblock'; block.style.flex = units + ' 1 0';
+      rows.forEach(row => {
+        const r = document.createElement('div'); r.className = 'vkrow';
+        row.forEach(item => {
+          if (typeof item === 'number') { const g = document.createElement('span'); g.className = 'vkgap'; g.style.flexGrow = item; r.appendChild(g); return; }
+          const name = Array.isArray(item) ? item[0] : item, w = Array.isArray(item) ? item[1] : 1;
+          const k = C.KEYS.find(x => x.name === name);
+          const b = document.createElement('button');
+          const mod = MOD_ORDER.includes(name);
+          b.type = 'button'; b.className = 'vkey' + (mod ? ' mod' : ''); b.style.flexGrow = w;
+          b.textContent = VK_LABEL[name] || (k && k.jis) || name;
+          b.title = '{' + name + '}';
+          b.addEventListener('mousedown', e => e.preventDefault());
+          b.addEventListener('click', () => vkPress(name));
+          if (mod) vkModButtons.push([name, b]);
+          r.appendChild(b);
+        });
+        block.appendChild(r);
+      });
+      root.appendChild(block);
+    });
+  }
+  vkBuild();
+  document.querySelectorAll('input[name=vkMode]').forEach(r => r.addEventListener('change', () => {
+    vkLatched.clear(); vkSync();
+    $('vkHint').hidden = vkMode() !== 'tap';
+  }));
+  function vkShow(on) {
+    $('vk').hidden = !on;
+    $('btnVk').textContent = on ? '仮想キーボードを隠す' : '仮想キーボードを出す';
+    try { localStorage.setItem('jupiter-vk', on ? '1' : '0'); } catch (e) { /* 保存できなくても動作に影響なし */ }
+  }
+  $('btnVk').addEventListener('click', () => vkShow($('vk').hidden));
+  try { if (localStorage.getItem('jupiter-vk') === '0') vkShow(false); } catch (e) { /* 既定の表示のまま */ }
+  /* 固定フッターの高さぶん、本文の下に余白を取る */
+  const fitFooter = () => { $('app').style.paddingBottom = ($('bar').offsetHeight + 16) + 'px'; };
+  if (window.ResizeObserver) new ResizeObserver(fitFooter).observe($('bar'));
+  window.addEventListener('resize', fitFooter);
+
+  /* ---- 保存・読み込み ---- */
+  async function runUnlock() {
+    const v = st.vial, dlg = $('dlgUnlock');
+    const s = await v.unlockStatus();
+    if (s.unlocked) return true;
+    const sig = s.keys.map(k => k.join(',')).join(' ');
+    const known = { '0,1 0,10': 'このキーボードでは、Q と P の位置のキーを同時に押し続けます。', '0,0 0,11': 'このキーボードでは、左右のエンコーダーを同時に押し込みます。' };
+    $('unlockKeys').textContent = (isJupiter() && known[sig]) || '解除用キーの位置（行, 列）: ' + s.keys.map(k => '(' + k[0] + ', ' + k[1] + ')').join(' ');
+    $('unlockBar').value = 0;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    try {
+      if (!s.inProgress) await v.unlockStart();
+      for (;;) {
+        const r = await v.unlockPoll();
+        $('unlockBar').value = (50 - r.counter) / 50;
+        if (r.unlocked) return true;
+        if (!r.inProgress) return false;
+        await sleep(200);
+      }
+    } finally { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+  }
+
+  async function save() {
+    const v = st.vial; if (!v) return;
+    const r = refresh();
+    const bad = r.comp.findIndex(c => c.errors.length);
+    if (bad >= 0) { toast('M' + bad + ' にエラーがあります', false); return; }
+    if (r.used > v.bufSize) { toast('保存領域を ' + (r.used - v.bufSize) + ' バイト超えています', false); return; }
+    $('btnSave').disabled = true;
+    try {
+      if (!(await runUnlock())) { toast('ロックを解除できませんでした', false); return; }
+      const n = await v.writeMacros(C.joinMacros(r.comp.map(c => c.bytes)));
+      layoutSave();
+      await load();
+      toast(n ? '書き込みました' : '変更はありませんでした', true);
+    } catch (e) { toast('書き込みに失敗: ' + e.message, false); }
+    finally { $('btnSave').disabled = !st.vial; }
+  }
+  $('btnSave').addEventListener('click', save);
+  $('btnReload').addEventListener('click', async () => {
+    if (dirty() && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
+    try { await load(); toast('読み直しました', true); } catch (e) { toast('読み込みに失敗: ' + e.message, false); }
+  });
+  const dirty = () => st.macros.some((s, i) => s !== st.orig[i]);
+
+  $('btnExport').addEventListener('click', () => {
+    const data = { format: 'jupiter-macro', version: 1, macros: st.macros };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'jupiter-macros.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  $('btnImport').addEventListener('click', () => $('fileImport').click());
+  $('fileImport').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data.format !== 'jupiter-macro' || !Array.isArray(data.macros)) throw new Error('このツールのバックアップではありません');
+      const n = st.macros.length;
+      st.macros = data.macros.slice(0, n).map(s => String(s));
+      while (st.macros.length < n) st.macros.push('');
+      ta.value = st.macros[st.sel]; refresh();
+      toast('読み込みました。「キーボードに書き込む」で反映されます', true);
+    } catch (err) { toast('読み込めませんでした: ' + err.message, false); }
+  });
+
+  window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
+  $('btnConnect').addEventListener('click', connect);
+  $('btnDemo').addEventListener('click', startDemo);
+})();
+</script>
+</body>
+</html>

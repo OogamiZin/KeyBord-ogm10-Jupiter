@@ -6,22 +6,22 @@
   "customKeycodes": [
     {
       "name": "MAC_SCREENSHOT",
-      "title": "Mac screenshot (Shift+Cmd+Ctrl+4)",
+      "title": "Mac の範囲指定スクリーンショット（Shift+Cmd+Ctrl+4）。選んだ範囲をクリップボードにコピーします",
       "shortName": "MacSS"
     },
     {
       "name": "LAYER_INFO",
-      "title": "Type default layer info",
+      "title": "接続先の OS で決まる基本レイヤーの説明を英文で入力します（Mac は 3、それ以外は 0）",
       "shortName": "LyrInfo"
     },
     {
       "name": "SQL_SELECT_TMP",
-      "title": "SQL-SELECT-TMP (Select/From/Where/Order by template)",
+      "title": "英数に切り替えてから SQL のひな形（Select * / From / Where 1=1 / Order by 1）を入力し、From の行末にカーソルを置きます",
       "shortName": "SQLSel"
     },
     {
       "name": "LAYER_STATUS",
-      "title": "Type current layer status",
+      "title": "単押し: 今のレイヤーと基本レイヤーを文字で入力します（例: Layer 4 (default 3: macOS)）。押しながら Q W E R T Y U の位置: レイヤー 1〜7 に固定、P の位置: レイヤー 0 に固定。固定中は、押しながらどのキーを押しても解除します",
       "shortName": "LyrStat"
     }
   ],
