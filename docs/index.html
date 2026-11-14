@@ -100,11 +100,20 @@ body.pip { padding: 8px; }
 body.pip #dispBody { max-width: none; }
 body.pip .nopip { display: none; }
 .dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; }
-#dLayer { font-size: 22px; font-weight: 700; min-width: 5.5em; }
-#dChips { display: flex; flex-wrap: wrap; gap: 4px; }
+#dLayer { font-size: 22px; font-weight: 700; min-width: 5.5em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lbadge { font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; background: var(--gc, var(--sub)); white-space: nowrap; }
+.lgroup { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 8px; border: 1px solid var(--gc, var(--line)); border-radius: 8px; border-left-width: 5px; }
+.lgroup > .gname { font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); margin-right: 2px; white-space: nowrap; }
+.lgroup.act { background: color-mix(in srgb, var(--gc, var(--line)) 12%, transparent); }
+.g0 { --gc: #2f6fde; } .g1 { --gc: #8a4fd0; } .g2 { --gc: #c77700; } .g3 { --gc: #1d8a4e; } .g4 { --gc: #c0392b; } .g5 { --gc: #1a8f96; }
+@media (prefers-color-scheme: dark) { .g0 { --gc: #5b93f5; } .g1 { --gc: #b085f0; } .g2 { --gc: #f0a83c; } .g3 { --gc: #5fcf8f; } .g4 { --gc: #ff8a80; } .g5 { --gc: #5fd0d6; } }
+.lchip .lname { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: 12px; margin-left: 5px; font-weight: 500; }
+.lchip.on .lname { font-weight: 700; }
+.board { border-top: 4px solid transparent; padding-top: 4px; }
+#dChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .lchip { min-width: 34px; padding: 3px 8px; font-family: var(--mono); }
 .lchip.def { border-style: double; border-width: 3px; }
-.lchip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.lchip.on { background: var(--gc, var(--accent)); color: #fff; border-color: var(--gc, var(--accent)); font-weight: 700; }
 .lchip.pin { outline: 2px solid var(--dirty); outline-offset: 1px; }
 .board { position: relative; width: 100%; container-type: inline-size; }
 #keys { padding: 12px 16px 32px; }
@@ -228,7 +237,7 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
   <div id="keysBody">
     <div class="dhead">
       <strong>レイヤー</strong>
-      <div id="kTabs" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      <div id="kTabs" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       <span id="kStatus" class="hint"></span>
       <span class="grow"></span>
       <span id="kToast"></span>
@@ -893,6 +902,7 @@ const JupiterCore = (() => {
     return {
       name: json.name || '', rows: json.matrix.rows, cols: json.matrix.cols, layout,
       encoders: layout.keys.reduce((n, k) => (k.enc !== undefined ? Math.max(n, k.enc + 1) : n), 0),
+      layerNames: Array.isArray(json.layerNames) ? json.layerNames : null,
       custom: (json.customKeycodes || []).map((c, i) => ({ short: c.shortName || c.name || ('USER' + i), name: c.name || '', title: c.title || '' })),
     };
   }
@@ -1382,6 +1392,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* ogm10-Jupiter の配置（リポジトリの vial.json と同じ内容） */
   const JUPITER = {
     uid: [0x36, 0xC9, 0x6B, 0xC8, 0xD0, 0xDA, 0xF4, 0x86], name: 'ogm10-Jupiter', matrix: { rows: 4, cols: 12 },
+    /* レイヤーの用途（group が同じレイヤーは、ひとまとまりで表示する） */
+    layerNames: [
+      { group: 'Windows', name: '基本' }, { group: 'Windows', name: '数字・記号' }, { group: 'Windows', name: '移動・機能' },
+      { group: 'Mac', name: '基本' }, { group: 'Mac', name: '数字・記号' }, { group: 'Mac', name: '移動・機能' },
+      { group: 'マクロ', name: '' }, { group: 'ユーザー', name: '' },
+    ],
     customKeycodes: [
       { name: 'MAC_SCREENSHOT', shortName: 'MacSS', title: 'Mac の範囲指定スクリーンショット（Shift+Cmd+Ctrl+4）。選んだ範囲をクリップボードにコピーします' },
       { name: 'LAYER_INFO', shortName: 'LyrInfo', title: '接続先の OS で決まる基本レイヤーの説明を英文で入力します（Mac は 3、それ以外は 0）' },
@@ -1395,6 +1411,35 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* 小窓に移しても参照できるよう、表示用の要素は最初に取っておく */
   const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), pip: $('btnPip'), reload: $('btnKeymap') };
 
+  /* レイヤーの用途名。キーボードの定義にあればそれを、なければ Jupiter 用の内蔵の名前を使う */
+  function layerInfo(l) {
+    const names = (D.def && D.def.layerNames) || (isJupiter() ? JUPITER.layerNames : null);
+    const n = names && names[l];
+    if (!n) return null;
+    const group = typeof n === 'string' ? '' : (n.group || ''), name = typeof n === 'string' ? n : (n.name || '');
+    const groups = [];
+    names.forEach(x => { const g = typeof x === 'string' ? '' : (x.group || ''); if (g && !groups.includes(g)) groups.push(g); });
+    return { group, name, gi: group ? groups.indexOf(group) % 6 : -1, label: [group, name].filter(Boolean).join(' ') };
+  }
+  const layerLabel = l => { const i = layerInfo(l); return 'レイヤー ' + l + (i && i.label ? '（' + i.label + '）' : ''); };
+  /* レイヤー番号のボタンを、用途のまとまりごとに枠で囲んで並べる。make(l) がボタンを返す */
+  function buildLayerChips(box, doc, count, activeMask, make) {
+    box.textContent = '';
+    let wrap = null, last = null;
+    for (let l = 0; l < count; l++) {
+      const info = layerInfo(l), b = make(l);
+      if (info && info.name) { const n = doc.createElement('span'); n.className = 'lname'; n.textContent = info.name; b.appendChild(n); }
+      if (info && info.group) {
+        if (info.group !== last) {
+          wrap = doc.createElement('span'); wrap.className = 'lgroup g' + info.gi;
+          const g = doc.createElement('span'); g.className = 'gname'; g.textContent = info.group; wrap.appendChild(g);
+          box.appendChild(wrap);
+        }
+        if ((activeMask >>> l) & 1) wrap.classList.add('act');
+        wrap.appendChild(b); last = info.group;
+      } else { box.appendChild(b); last = null; }
+    }
+  }
   function setMode(m) {
     if (st.capturing) setCapture(false);
     D.mode = m;
@@ -1463,17 +1508,19 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const LAYOUT = D.def.layout;
     const view = dispView(), mask = (view.layers | view.def) >>> 0;
     const doc = E.board.ownerDocument;
+    const top = layerInfo(view.top);
     E.layer.textContent = 'レイヤー ' + view.top;
-    E.chips.textContent = '';
-    for (let l = 0; l < D.layers; l++) {
+    if (top && top.label) { const bd = doc.createElement('span'); bd.className = 'lbadge g' + top.gi; bd.textContent = top.label; E.layer.appendChild(bd); }
+    E.board.style.borderTopColor = top && top.gi >= 0 ? getComputedStyle(E.layer.lastChild).backgroundColor : 'transparent';
+    buildLayerChips(E.chips, doc, D.layers, mask, l => {
       const b = doc.createElement('button');
       const isDef = (view.def >>> l) & 1;
       b.className = 'lchip' + (((mask >>> l) & 1) ? ' on' : '') + (isDef ? ' def' : '') + (D.pin === l ? ' pin' : '');
-      b.textContent = l; b.title = isDef ? '基本レイヤー' : '';
+      b.textContent = l; b.title = layerLabel(l) + (isDef ? '・基本レイヤー' : '');
       b.addEventListener('click', () => chipClick(l));
-      E.chips.appendChild(b);
-    }
-    E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は基本レイヤーの切り替え）'
+      return b;
+    });
+    E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は Windows / Mac の基本レイヤーの切り替え）'
       : D.supported === false ? 'このファームウェアはレイヤー通知に未対応です。番号をクリックして表示を切り替えてください。'
       : D.pin !== null ? 'レイヤー ' + D.pin + ' を固定表示中（もう一度クリックすると追従に戻ります）'
       : 'キーボードのレイヤーに追従中（番号をクリックすると固定表示）';
@@ -1553,7 +1600,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const layers = [...Array(D.layers).keys()];
     for (const id of ['kLtLayer', 'kOpLayer']) {
       const sel = $(id), keep = sel.value; sel.textContent = '';
-      layers.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = 'レイヤー ' + l; sel.appendChild(o); });
+      layers.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = layerLabel(l); sel.appendChild(o); });
       sel.value = keep !== '' && Number(keep) < D.layers ? keep : (D.layers > 1 ? '1' : '0');
     }
     const sp = $('kSpecial'); sp.textContent = '';
@@ -1578,14 +1625,15 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (!K.edit || !D.def) return;
     const LAYOUT = D.def.layout, ctx = { macros: st.macros, custom: D.def.custom };
     const changes = keysChanges(), changedLayers = new Set(changes.map(c => c.layer));
-    const tabs = $('kTabs'); tabs.textContent = '';
-    for (let l = 0; l < D.layers; l++) {
+    buildLayerChips($('kTabs'), document, D.layers, (1 << K.layer) >>> 0, l => {
       const b = document.createElement('button');
       b.className = 'lchip' + (l === K.layer ? ' on' : '') + (changedLayers.has(l) ? ' chg' : '');
-      b.textContent = l;
+      b.textContent = l; b.title = layerLabel(l);
       b.addEventListener('click', () => { K.layer = l; keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); });
-      tabs.appendChild(b);
-    }
+      return b;
+    });
+    const cur = layerInfo(K.layer);
+    $('kboard').style.borderTopColor = cur && cur.gi >= 0 ? getComputedStyle($('kTabs').querySelector('.lgroup.act')).borderLeftColor : 'transparent';
     $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
     const board = $('kboard');
     board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
@@ -1617,7 +1665,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function keysShowSel() {
     if (!K.edit) return;
     const k = kKeys()[K.sel];
-    $('kSel').textContent = 'レイヤー ' + K.layer + ' ／ ' + (k.enc !== undefined ? 'エンコーダー ' + k.enc + (k.dir ? ' 時計回り' : ' 反時計回り') : '行 ' + k.row + '・列 ' + k.col);
+    $('kSel').textContent = layerLabel(K.layer) + ' ／ ' + (k.enc !== undefined ? 'エンコーダー ' + k.enc + (k.dir ? ' 時計回り' : ' 反時計回り') : '行 ' + k.row + '・列 ' + k.col);
     $('kText').value = C.keycodeToText(kVal(K.layer, k), D.def.custom);
   }
   function keysAssign(kc, stay) {
