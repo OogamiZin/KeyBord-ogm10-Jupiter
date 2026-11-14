@@ -10,6 +10,8 @@
 #include "os_detection.h"
 // SEND_STRING を JIS 配列のPC向けに変換する（* や = を正しく入力するため）
 #include "sendstring_japanese.h"
+// レイヤー表示ツールへ現在のレイヤーを知らせるために Raw HID を使う
+#include "raw_hid.h"
 
 enum custom_keycodes {
     // VialのGUIで選べるよう、vial.jsonのcustomKeycodesと同じ順でQK_KB_0から割り当てる
@@ -567,6 +569,68 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
+// ---- レイヤー表示ツール（jupiter-macro.html）向け: 現在のレイヤー状態を Raw HID で知らせる ----
+// VIA / Vial が使っていない先頭バイト 0xF7 を、このキーボード専用のコマンドとして使う。
+//   PC -> キーボード: [0xF7, 0x01]            現在の状態を返す。同時に、以後 3 秒間の「変化通知」を申し込む
+//   キーボード -> PC: [0xF7, 0x01, 1, 最上位レイヤー, layer_state(4バイト LE), default_layer_state(4バイト LE), OS別デフォルトレイヤー]
+//   キーボード -> PC: [0xF7, 0x02, ...同じ内容]  申し込み中にレイヤーが変わったとき、キーボード側から送る通知
+// 表示ツールは 1 秒ごとに問い合わせ直すので、ツールを閉じれば 3 秒で通知は止まる（標準の Vial には影響しない）
+#define JUP_HID_ID            0xF7
+#define JUP_HID_GET           0x01
+#define JUP_HID_PUSH          0x02
+#define JUP_HID_VERSION       1
+#define JUP_HID_SUBSCRIBE_MS  3000
+
+static bool     jup_hid_subscribed   = false;
+static uint32_t jup_hid_sub_timer    = 0;
+static uint32_t jup_hid_sent_layer   = 0;
+static uint32_t jup_hid_sent_default = 0;
+
+static void jup_hid_fill(uint8_t *data, uint8_t kind) {
+    uint32_t ls = (uint32_t)layer_state;
+    uint32_t ds = (uint32_t)default_layer_state;
+    data[0]  = JUP_HID_ID;
+    data[1]  = kind;
+    data[2]  = JUP_HID_VERSION;
+    data[3]  = get_highest_layer(layer_state | default_layer_state);
+    data[4]  = ls & 0xFF;
+    data[5]  = (ls >> 8) & 0xFF;
+    data[6]  = (ls >> 16) & 0xFF;
+    data[7]  = (ls >> 24) & 0xFF;
+    data[8]  = ds & 0xFF;
+    data[9]  = (ds >> 8) & 0xFF;
+    data[10] = (ds >> 16) & 0xFF;
+    data[11] = (ds >> 24) & 0xFF;
+    data[12] = os_default_layer;
+    jup_hid_sent_layer   = ls;
+    jup_hid_sent_default = ds;
+}
+
+// VIA / Vial が知らないコマンドはここに回ってくる（返事は呼び出し元が送るので、ここでは raw_hid_send しない）
+void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
+    if (length >= 13 && data[0] == JUP_HID_ID && data[1] == JUP_HID_GET) {
+        jup_hid_fill(data, JUP_HID_GET);
+        jup_hid_subscribed = true;
+        jup_hid_sub_timer  = timer_read32();
+        return;
+    }
+    data[0] = 0xFF; // id_unhandled（未対応コマンド）
+}
+
+// 申し込み中にレイヤーが変わったら通知する（housekeeping_task_user から毎周呼ぶ）
+static void jup_hid_task(void) {
+    if (!jup_hid_subscribed) return;
+    if (timer_elapsed32(jup_hid_sub_timer) > JUP_HID_SUBSCRIBE_MS) {
+        jup_hid_subscribed = false;
+        return;
+    }
+    if ((uint32_t)layer_state != jup_hid_sent_layer || (uint32_t)default_layer_state != jup_hid_sent_default) {
+        uint8_t buf[32] = {0};
+        jup_hid_fill(buf, JUP_HID_PUSH);
+        raw_hid_send(buf, sizeof(buf));
+    }
+}
+
 // 接続先OSに応じてデフォルトレイヤーを切り替える
 // Mac(macOS / iOS) -> レイヤー3、それ以外 -> レイヤー0
 void housekeeping_task_user(void) {
@@ -584,6 +648,7 @@ void housekeeping_task_user(void) {
             default_layer_set(1UL << 0);
         }
     }
+    jup_hid_task();
 }
 
 /* USER CODE END */
