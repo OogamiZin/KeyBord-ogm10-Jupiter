@@ -151,6 +151,8 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .k.layer > div { background: var(--chip); border-color: var(--accent); }
 .k.macro > div, .k.custom > div { background: var(--chip-key); }
 .k.enc > div { border-radius: 50%; }
+#tip { position: fixed; z-index: 60; max-width: min(400px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.55; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); pointer-events: none; overflow-wrap: anywhere; }
+#tip strong { display: block; font-family: var(--mono); margin-bottom: 2px; }
 #legend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
 #legend dt { font-family: var(--mono); font-weight: 650; padding: 0 8px; border-radius: 5px; background: var(--chip-key); align-self: start; white-space: nowrap; }
 #legend dd { margin: 0; }
@@ -401,10 +403,17 @@ const JupiterCore = (() => {
     [0x56, 'PMNS', ['KP_MINUS']], [0x57, 'PPLS', ['KP_PLUS']], [0x58, 'PENT', ['KP_ENTER']],
     [0x59, 'P1', ['KP_1']], [0x5A, 'P2', ['KP_2']], [0x5B, 'P3', ['KP_3']], [0x5C, 'P4', ['KP_4']], [0x5D, 'P5', ['KP_5']],
     [0x5E, 'P6', ['KP_6']], [0x5F, 'P7', ['KP_7']], [0x60, 'P8', ['KP_8']], [0x61, 'P9', ['KP_9']], [0x62, 'P0', ['KP_0']],
-    [0x63, 'PDOT', ['KP_DOT']], [0x64, 'NUBS', ['NONUS_BACKSLASH', 'NONUS_BSLASH']], [0x65, 'APP', ['APPLICATION', 'MENU']], [0x67, 'PEQL', ['KP_EQUAL']],
-    [0x74, 'EXEC', ['EXECUTE']], [0x75, 'HELP'], [0x77, 'SLCT', ['SELECT']], [0x78, 'STOP'], [0x79, 'AGIN', ['AGAIN']], [0x7A, 'UNDO'],
-    [0x7B, 'CUT'], [0x7C, 'COPY'], [0x7D, 'PSTE', ['PASTE']], [0x7E, 'FIND'], [0x80, '_VOLUP'], [0x81, '_VOLDOWN'],
-    [0x82, 'LCAP', ['LOCKING_CAPS_LOCK']], [0x83, 'LNUM', ['LOCKING_NUM_LOCK']], [0x84, 'LSCR', ['LOCKING_SCROLL_LOCK']], [0x85, 'PCMM', ['KP_COMMA']],
+    [0x63, 'PDOT', ['KP_DOT']], [0x64, 'NUBS', ['NONUS_BACKSLASH', 'NONUS_BSLASH']], [0x65, 'APP', ['APPLICATION']], [0x66, 'KB_POWER', ['KB_PWR']], [0x67, 'PEQL', ['KP_EQUAL']],
+    [0x74, 'EXEC', ['EXECUTE']], [0x75, 'HELP'], [0x76, 'MENU'], [0x77, 'SLCT', ['SELECT']], [0x78, 'STOP'], [0x79, 'AGIN', ['AGAIN']], [0x7A, 'UNDO'],
+    [0x7B, 'CUT'], [0x7C, 'COPY'], [0x7D, 'PSTE', ['PASTE']], [0x7E, 'FIND'], [0x7F, 'KB_MUTE', ['_MUTE']], [0x80, '_VOLUP', ['KB_VOLUME_UP']], [0x81, '_VOLDOWN', ['KB_VOLUME_DOWN']],
+    [0x82, 'LCAP', ['LOCKING_CAPS_LOCK']], [0x83, 'LNUM', ['LOCKING_NUM_LOCK']], [0x84, 'LSCR', ['LOCKING_SCROLL_LOCK']], [0x85, 'PCMM', ['KP_COMMA']], [0x86, 'KP_EQUAL_AS400'],
+    [0x8C, 'INT6', ['INTERNATIONAL_6']], [0x8D, 'INT7', ['INTERNATIONAL_7']], [0x8E, 'INT8', ['INTERNATIONAL_8']], [0x8F, 'INT9', ['INTERNATIONAL_9']],
+    [0x92, 'LNG3', ['LANG3', 'LANGUAGE_3']], [0x93, 'LNG4', ['LANG4', 'LANGUAGE_4']], [0x94, 'LNG5', ['LANG5', 'LANGUAGE_5']], [0x95, 'LNG6', ['LANG6', 'LANGUAGE_6']],
+    [0x96, 'LNG7', ['LANG7', 'LANGUAGE_7']], [0x97, 'LNG8', ['LANG8', 'LANGUAGE_8']], [0x98, 'LNG9', ['LANG9', 'LANGUAGE_9']],
+    [0x99, 'ERAS', ['ALTERNATE_ERASE']], [0x9A, 'SYRQ', ['SYSTEM_REQUEST', 'SYSREQ']], [0x9B, 'CNCL', ['CANCEL']], [0x9C, 'CLR', ['CLEAR']], [0x9D, 'PRIR', ['PRIOR']],
+    [0x9E, 'RETN', ['RETURN_2']], [0x9F, 'SEPR', ['SEPARATOR']], [0xA0, 'OUT'], [0xA1, 'OPER'], [0xA2, 'CLAG', ['CLEAR_AGAIN']], [0xA3, 'CRSL', ['CRSEL']], [0xA4, 'EXSL', ['EXSEL']],
+    [0xBF, 'CPNL', ['CONTROL_PANEL']], [0xC0, 'ASST', ['ASSISTANT']], [0xC1, 'MCTL', ['MISSION_CONTROL']], [0xC2, 'LPAD', ['LAUNCHPAD']],
+    [0xD6, 'BTN6', ['MS_BTN6']], [0xD7, 'BTN7', ['MS_BTN7']], [0xD8, 'BTN8', ['MS_BTN8']],
     [0x87, 'INT1', ['INTERNATIONAL_1', 'RO'], 'ろ \\ _'], [0x88, 'INT2', ['INTERNATIONAL_2', 'KANA'], 'かな'],
     [0x89, 'INT3', ['INTERNATIONAL_3', 'JYEN', 'YEN'], '¥ |'], [0x8A, 'INT4', ['INTERNATIONAL_4', 'HENK'], '変換'],
     [0x8B, 'INT5', ['INTERNATIONAL_5', 'MHEN'], '無変換'],
@@ -644,7 +653,8 @@ const JupiterCore = (() => {
     INT1: 'ろ', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', LNG1: 'かな', LNG2: '英数',
     LCTL: 'Ctrl', LSFT: 'Shift', LALT: 'Alt', LGUI: 'GUI', RCTL: 'RCtrl', RSFT: 'RShift', RALT: 'RAlt', RGUI: 'RGUI',
     PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
-    APP: 'App', MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲', MSTP: '停止',
+    APP: 'App', MENU: 'Menu', MCTL: 'Mission Ctl', LPAD: 'Launchpad', CPNL: 'コンパネ', ASST: 'アシスタント', KB_MUTE: '消音(KB)', _VOLUP: '音量+(KB)', _VOLDOWN: '音量-(KB)', KB_POWER: '電源(KB)',
+    MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲', MSTP: '停止',
     BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', PWR: '電源', SLEP: 'スリープ',
     MS_U: 'マウス↑', MS_D: 'マウス↓', MS_L: 'マウス←', MS_R: 'マウス→',
     BTN1: '左クリック', BTN2: '右クリック', BTN3: '中クリック', BTN4: 'ボタン4', BTN5: 'ボタン5',
@@ -1450,6 +1460,31 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     return { group, name, gi: group ? groups.indexOf(group) % 6 : -1, label: [group, name].filter(Boolean).join(' ') };
   }
   const layerLabel = l => { const i = layerInfo(l); return 'レイヤー ' + l + (i && i.label ? '（' + i.label + '）' : ''); };
+  /* カーソルを乗せるとすぐ出る説明（専用キーとマクロ用）。小窓の中でも動くよう、要素のある文書に作る */
+  function tipHide(doc) { const t = doc.getElementById('tip'); if (t) t.hidden = true; }
+  function tipShow(el, title, body) {
+    const doc = el.ownerDocument;
+    let t = doc.getElementById('tip');
+    if (!t) { t = doc.createElement('div'); t.id = 'tip'; doc.body.appendChild(t); }
+    t.textContent = '';
+    const h = doc.createElement('strong'); h.textContent = title;
+    const b = doc.createElement('div'); b.textContent = body;
+    t.append(h, b); t.hidden = false;
+    const r = el.getBoundingClientRect(), vw = doc.documentElement.clientWidth, vh = doc.documentElement.clientHeight;
+    const x = Math.min(Math.max(8, r.left + r.width / 2 - t.offsetWidth / 2), vw - t.offsetWidth - 8);
+    let y = r.bottom + 6;
+    if (y + t.offsetHeight > vh - 8) y = r.top - t.offsetHeight - 6;
+    t.style.left = Math.max(8, x) + 'px'; t.style.top = Math.max(8, y) + 'px';
+  }
+  /* キーの表示に説明があれば、カーソルを乗せたときに出す。付けたら true */
+  function tipAttach(el, lab) {
+    if (!lab.desc) return false;
+    const cu = lab.kind === 'custom' && D.def && D.def.custom[lab.id];
+    const title = lab.kind === 'macro' ? lab.main + '（マクロ）' : lab.main + (cu && cu.name && cu.name !== lab.main ? '（' + cu.name + '）' : '');
+    el.addEventListener('mouseenter', () => tipShow(el, title, lab.desc));
+    el.addEventListener('mouseleave', () => tipHide(el.ownerDocument));
+    return true;
+  }
   /* レイヤー番号のボタンを、用途のまとまりごとに枠で囲んで並べる。make(l) がボタンを返す */
   function buildLayerChips(box, doc, count, activeMask, make) {
     box.textContent = '';
@@ -1489,7 +1524,14 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const v = st.vial;
     /* 配置とカスタムキーの説明は、キーボードに入っている定義から読む。読めないときだけ内蔵の Jupiter 用を使う */
     D.defNote = '';
-    try { D.def = C.toDefinition(await v.readDefinition()); }
+    try {
+      D.def = C.toDefinition(await v.readDefinition());
+      /* 説明が英語のままの古いファームウェアでは、内蔵の日本語の説明に差し替える（Jupiter のみ） */
+      if (isJupiter()) D.def.custom.forEach(c => {
+        const mine = JUPITER.customKeycodes.find(x => x.name === c.name);
+        if (mine && (!c.title || /^[\x20-\x7E]*$/.test(c.title))) c.title = mine.title;
+      });
+    }
     catch (e) {
       if (!isJupiter()) throw new Error('キーボードから配置の定義を読めませんでした（' + e.message + '）');
       D.def = C.toDefinition(JUPITER); D.defNote = '（定義を読めなかったため、内蔵の配置を使用）';
@@ -1556,7 +1598,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const ctx = { macros: st.macros, custom: D.def.custom };
     const notes = new Map();
     E.board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
-    E.board.textContent = '';
+    E.board.textContent = ''; tipHide(doc);
     for (const k of LAYOUT.keys) {
       const per = [];
       for (let l = 0; l < D.layers; l++) per.push(k.enc !== undefined ? D.enc[l][k.enc][k.dir] : D.keymap[l][k.row][k.col]);
@@ -1571,7 +1613,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       box.appendChild(m);
       if (lab.shift) { const t = doc.createElement('span'); t.className = 't'; t.textContent = lab.shift; t.title = 'Shift を押しながら打つと出る文字'; box.appendChild(t); }
       if (lab.sub) { const sub = doc.createElement('span'); sub.className = 's'; sub.textContent = lab.sub; box.appendChild(sub); }
-      el.title = (lab.desc ? lab.main + ': ' + lab.desc + '\n' : '') + 'レイヤー ' + eff.layer + ' の割り当て';
+      if (!tipAttach(el, lab)) el.title = layerLabel(eff.layer) + ' の割り当て';
       if (lab.desc && lab.desc !== '（空）' && !notes.has(lab.kind + lab.id)) notes.set(lab.kind + lab.id, lab);  /* 空のマクロは凡例に出さない */
       el.appendChild(box); E.board.appendChild(el);
     }
@@ -1665,7 +1707,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
     const board = $('kboard');
     board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
-    board.textContent = '';
+    board.textContent = ''; tipHide(document);
     LAYOUT.keys.forEach((k, i) => {
       const kc = kVal(K.layer, k), lab = C.keyLabel(kc, ctx);
       let sub = lab.sub;
@@ -1684,7 +1726,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       const m = document.createElement('span'); m.className = 'm' + (main.length > 4 * k.w ? ' long' : ''); m.textContent = main; box.appendChild(m);
       if (lab.shift) { const t = document.createElement('span'); t.className = 't'; t.textContent = lab.shift; box.appendChild(t); }
       if (sub) { const sp = document.createElement('span'); sp.className = 's'; sp.textContent = sub; box.appendChild(sp); }
-      el.title = C.keycodeToText(kc, D.def.custom) + (lab.desc ? '\n' + lab.desc : '');
+      if (!tipAttach(el, lab)) el.title = C.keycodeToText(kc, D.def.custom);
       el.addEventListener('click', () => { K.sel = i; keysRender(); keysShowSel(); });
       el.appendChild(box); board.appendChild(el);
     });
