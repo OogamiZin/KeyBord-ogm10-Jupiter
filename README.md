@@ -16,6 +16,14 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 | 取り付け穴 | φ2.2 mm × 8（M2） |
 | ファームウェア | QMK / Vial |
 
+## 設定ツール
+
+ブラウザだけで、マクロの編集、キー割り当ての変更、今のレイヤーのキー表示ができます。インストールは不要です。
+
+**https://oogamizin.github.io/KeyBord-ogm10-Jupiter/**
+
+パソコンの Chrome か Edge で開き、「キーボードに接続」を押してください。使い方は [docs/README.md](docs/README.md) にあります。
+
 ## 詳細ドキュメント
 
 | 内容 | ページ |
@@ -23,7 +31,7 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 | 基板：USB ハブの仕様、実装部品の一覧、JLCPCB 発注時の注意、ピンアサイン | [pcb/README.md](pcb/README.md) |
 | ファームウェア：書き込み方法、ビルド、Vial | [qmk_firmware/keyboards/ogm10_jupiter/readme.md](qmk_firmware/keyboards/ogm10_jupiter/readme.md) |
 | ノブ：選び方、ファイル一覧、印刷のコツ | [knob/README.md](knob/README.md) |
-| 設定ツール：ブラウザでのマクロ編集、キー割り当て、レイヤー表示 | [config-tool/README.md](config-tool/README.md) |
+| 設定ツール：使い方、できること、制約 | [docs/README.md](docs/README.md) |
 
 ## 自分で用意するもの
 
@@ -81,5 +89,6 @@ M2×3mm スペーサー
 | `plate/ogm10-Jupiter-bottom-plate.json` | ボトムプレート（EasyEDA Standard ソース） |
 | `qmk_firmware/` | QMK / Vial ファームウェア |
 | `knob/` | ロータリーエンコーダー用ノブ（STL / FreeCAD マクロ） |
+| `docs/` | 設定ツール（GitHub Pages で公開しているページ） |
 
 EasyEDA Standard の「ファイル > 開く > EasyEDA ソース」で各 JSON を読み込めます。
