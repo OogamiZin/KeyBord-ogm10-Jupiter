@@ -13,7 +13,7 @@
 
 - QMK / Vial 用のファイルは このフォルダ（`qmk_firmware/keyboards/ogm10_jupiter`） にあります。
 - push するたびに GitHub Actions（`.github/workflows/build.yml`、`target.json`）で `ogm10_jupiter_vial.uf2` がビルドされ、Actions の Artifacts からダウンロードできます。
-- デフォルトキーマップは仮のものです。[設定ツール](https://oogamizin.github.io/KeyBord-ogm10-Jupiter/)か Vial で自由に変更してください。アンロックは Q と P の位置のキーの同時長押しです。
+- デフォルトキーマップは仮のものです。[設定ツール](https://oogamizin.github.io/KeyBord.ogm10-Jupiter/)か Vial で自由に変更してください。アンロックは Q と P の位置のキーの同時長押しです。
 - `keyboard.json` / `vial.json` のキー位置は基板上のスイッチ座標をもとにしています。左端3段目と最下段中央の2キーが 1.5u、ほかは 1u です。Vial 上では左右のエンコーダーを 0.75u 幅で表示しています（左は左端、右は2〜4段目の右端に合わせています）。
 
 ## レイヤー状態の通知（表示ツール向け）

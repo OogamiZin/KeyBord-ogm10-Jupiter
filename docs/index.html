@@ -131,7 +131,9 @@ body.pip .nopip { display: none; }
 .lgroup > .gname { font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); margin-right: 2px; white-space: nowrap; }
 button.gname { font: inherit; font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); background: none; border: 0; border-radius: 4px; padding: 0 2px; cursor: pointer; text-align: left; }
 button.gname:hover { background: color-mix(in srgb, var(--gc, var(--line)) 15%, transparent); }
-button.gname .tw { display: inline-block; width: 1em; font-size: 10px; }
+button.gname { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
+button.gname .tw { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--gc, var(--line)); font-size: 15px; font-weight: 700; line-height: 1; }
+.lside button.gname { display: flex; width: calc(100% - 2px); }
 .lgroup.fold > .lchip { display: none; }
 .lgroup.fold { padding-bottom: 3px; }
 .lgroup.act { background: color-mix(in srgb, var(--gc, var(--line)) 12%, transparent); }
@@ -1610,8 +1612,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
             const folded = groupFolded(info.group);
             if (folded) wrap.classList.add('fold');
             const g = doc.createElement('button'); g.type = 'button'; g.className = 'gname';
-            const tw = doc.createElement('span'); tw.className = 'tw'; tw.textContent = folded ? '▸' : '▾';
-            g.append(tw, doc.createTextNode(info.group));
+            const tw = doc.createElement('span'); tw.className = 'tw'; tw.textContent = folded ? '+' : '−';
+            const nm = doc.createElement('span'); nm.textContent = info.group;
+            g.append(nm, tw);
             g.title = folded ? '開く' : '折りたたむ';
             g.setAttribute('aria-expanded', String(!folded));
             g.addEventListener('click', () => toggleGroup(info.group));

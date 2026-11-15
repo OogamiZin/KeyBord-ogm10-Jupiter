@@ -4,11 +4,11 @@
 
 ブラウザだけで動く、ogm10-Jupiter 用の設定ツールです。Vial 対応ファームウェアのキーボードに WebHID でつなぎ、マクロとキー割り当てを編集します。ファームウェアの書き換えなしで、変更はすぐキーボードに保存されます。
 
-**https://oogamizin.github.io/KeyBord-ogm10-Jupiter/**
+**https://oogamizin.github.io/KeyBord.ogm10-Jupiter/**
 
 ## 使い方
 
-1. パソコンの Chrome か Edge で https://oogamizin.github.io/KeyBord-ogm10-Jupiter/ を開きます（Safari と Firefox は WebHID に対応していないため使えません）。
+1. パソコンの Chrome か Edge で https://oogamizin.github.io/KeyBord.ogm10-Jupiter/ を開きます（Safari と Firefox は WebHID に対応していないため使えません）。
 2. 「キーボードに接続」を押し、一覧から ogm10-Jupiter を選びます。
 3. 上部のボタンで「マクロ」「キー割当」「レイヤ監視」を切り替えます。右上には、接続中のキーボード名と、マクロの保存領域の使用量（例: 153 / 2988 Byte とバー）が出ます。
 4. 変更は右上の「書込」でまとめてキーボードに書き込みます。まだ書き込んでいない変更があると、件数付きのオレンジ色になります（キーボードにつないでいる間だけ、「デモで試す」の代わりに出ます）。
