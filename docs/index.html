@@ -56,7 +56,7 @@ main { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; pa
 .item.err .sz { color: var(--warn); font-weight: 600; }
 #editor { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-width: 0; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
-.row .grow { flex: 1; }
+.row .grow, .dhead .grow { flex: 1; }
 .group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 8px; border: 1px dashed var(--line); border-radius: 8px; }
 .group label { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; }
 .group .cap { color: var(--sub); font-size: 12px; }
@@ -85,6 +85,10 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 .vkhead .cap { color: var(--sub); font-size: 12px; }
 .vkscroll { overflow-x: auto; }
 #vkKeys { display: flex; gap: 12px; width: 900px; margin: 0 auto; }
+/* キー割当のときだけ、仮想キーボードの上に「透過」「無効」の行を出す */
+#vkTop { display: none; gap: 3px; width: 900px; margin: 0 auto 3px; }
+#kvk #vkTop { display: flex; }
+#vkTop .vkey { flex: 0 0 auto; width: calc((900px - 12px * 2) * 15 / 21 / 15 * 2); font-size: 12px; }
 .vkblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .vkrow { display: flex; gap: 3px; height: 28px; }
 .vkey { flex: 1 1 0; min-width: 0; height: 28px; padding: 0 2px; border-radius: 5px; font-size: 11px; line-height: 1; overflow: hidden; white-space: nowrap; background: var(--bg); }
@@ -152,7 +156,11 @@ button.gname .tw { display: inline-flex; align-items: center; justify-content: c
 #kedit { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 #kText { flex: 1; min-width: 200px; font-family: var(--mono); }
 select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 260px; }
-#kToast { font-size: 13px; } #kToast.ok { color: var(--ok); } #kToast.ng { color: var(--warn); }
+#kToast { font-size: 13px; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } #kToast.ok { color: var(--ok); } #kToast.ng { color: var(--warn); }
+/* 右端の「初期設定に戻す」「変更破棄」「書込」は、いつも 1 行で右に揃える */
+.kacts { display: flex; gap: 6px; flex: none; margin-left: auto; }
+#keys .dhead { flex-wrap: nowrap; }
+#kStatus:empty { display: none; }
 #kvk #vk { margin: 4px 0 0; padding: 0; border: 0; }
 #kvk .vkhead { display: none; }
 #kLayerText { min-height: 130px; margin-top: 8px; }
@@ -312,14 +320,15 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     </aside>
     <div class="lmain">
     <div class="dhead">
-      <span id="kStatus" class="hint"></span>
-      <span class="grow"></span>
-      <span id="kToast"></span>
       <button id="kCapture" title="オンの間、実際に押したキーの組み合わせを選択中のキーに割り当てます">キー入力モード</button>
       <label class="hint" style="white-space:nowrap"><input type="checkbox" id="kAdvance" checked> 設定したら次のキーへ進む</label>
+      <span id="kStatus" class="hint"></span>
+      <span id="kToast"></span>
+      <span class="kacts">
       <button id="kDefault" title="全レイヤーのキー割当とエンコーダーを、ファームウェア（keymap.c）の初期設定に戻します">初期設定に戻す</button>
       <button id="kReload" title="キー割当の書き込んでいない変更を捨てて、キーボードの今の割り当てに戻します">変更破棄</button>
       <button id="kSave" class="wbtn" title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
+      </span>
     </div>
     <div id="kTrig" class="trigview" hidden></div>
     <div id="kboard" class="board"></div>
@@ -328,12 +337,8 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
         <strong id="kSel">キーを選んでください</strong>
         <input type="text" id="kText" autocomplete="off" spellcheck="false" placeholder="例: KC_A ／ LCTL(KC_C) ／ LT(2, KC_LBRC) ／ MO(1) ／ QK_MACRO_0（LCTL+C のような短い書き方も可）">
         <button id="kApply" class="primary">設定</button>
-      </div>
-      <div class="row">
-        <button id="kTrns" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
-        <button id="kNo" title="何も送らない">✕ 無効</button>
-        <button id="kRevert">このキーを元に戻す</button>
-        <button id="kKeyDefault" title="このキーだけ、ファームウェア（keymap.c）の初期設定の割り当てに戻します">このキーを初期設定に</button>
+        <button id="kRevert" title="このキーの書き込んでいない変更を捨てて、キーボードの今の割り当てに戻します">変更破棄</button>
+        <button id="kKeyDefault" title="このキーだけ、ファームウェア（keymap.c）の初期設定の割り当てに戻します">初期設定</button>
       </div>
       <div class="row">
         <div class="group"><span class="cap">長押しでレイヤー</span><select id="kLtLayer"></select><button id="kLt">追加設定</button></div>
@@ -405,7 +410,13 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <label><input type="radio" name="vkMode" value="up">離す</label>
       <span class="cap" id="vkHint">Ctrl・Shift などを先にクリックすると、次のキーとの組み合わせになります。</span>
     </div>
-    <div class="vkscroll"><div id="vkKeys"></div></div>
+    <div class="vkscroll">
+      <div id="vkTop">
+        <button type="button" id="kTrns" class="vkey" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
+        <button type="button" id="kNo" class="vkey" title="何も送らない">✕ 無効</button>
+      </div>
+      <div id="vkKeys"></div>
+    </div>
   </div>
   <div class="barrow">
   <span id="toast"></span>
@@ -1918,7 +1929,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* ---- キー割り当ての編集 ---- */
   const K = { trig: false, layer: 0, sel: 0, edit: null, encEdit: null, vil: null, vkHidden: false };
   const clone = x => JSON.parse(JSON.stringify(x));
-  function kToast(msg, ok) { const t = $('kToast'); t.textContent = msg; t.className = ok ? 'ok' : 'ng'; }
+  function kToast(msg, ok) { const t = $('kToast'); t.textContent = msg; t.title = msg; t.className = ok ? 'ok' : 'ng'; }
   const kKeys = () => D.def.layout.keys;
   /* 見た目の順（上から下、左から右）。「次のキーへ進む」で使う */
   const kOrder = () => kKeys().map((k, i) => i).sort((a, b) => kKeys()[a].y - kKeys()[b].y || kKeys()[a].x - kKeys()[b].x);
@@ -2061,6 +2072,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   $('kApply').addEventListener('click', () => keysAssignText($('kText').value));
   $('kText').addEventListener('keydown', e => { if (e.key === 'Enter' && !st.capturing) { e.preventDefault(); keysAssignText($('kText').value); } });
+  ['kTrns', 'kNo'].forEach(id => $(id).addEventListener('mousedown', e => e.preventDefault()));
   $('kTrns').addEventListener('click', () => keysAssign(1));
   $('kNo').addEventListener('click', () => keysAssign(0));
   $('kRevert').addEventListener('click', () => keysAssign(kBase(K.layer, kKeys()[K.sel]), true));
