@@ -2,7 +2,10 @@
 
 [← トップページに戻る](../README.md)
 
-ブラウザだけで動く、ogm10-Jupiter 用の設定ツールです。Vial 対応ファームウェアのキーボードに WebHID でつなぎ、マクロとキー割り当てを編集します。ファームウェアの書き換えなしで、変更はすぐキーボードに保存されます。
+ogm10-Jupiter用の改造Vialです。ブラウザ（Chrome・Edge）から接続して設定する画面です。
+
+デフォルトでJISキーボードレイアウトになっています。
+
 
 **https://oogamizin.github.io/KeyBord.ogm10-Jupiter/**
 
