@@ -1356,8 +1356,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* ---- WebHID ---- */
   class HidTransport {
     constructor(dev) {
-      this.dev = dev; this.waiter = null; this.onPush = null;
+      this.dev = dev; this.waiter = null; this.onPush = null; this.closed = false;
       dev.addEventListener('inputreport', e => {
+        if (this.closed) return;  /* 解除したあとの古い接続は無視する */
         const d = new Uint8Array(e.data.buffer.slice(e.data.byteOffset, e.data.byteOffset + e.data.byteLength));
         /* キーボード側から届くレイヤー変化の通知は、問い合わせの返事とは別に扱う */
         if (d[0] === 0xF7 && d[1] === 0x02) { if (this.onPush) this.onPush(d); return; }
@@ -2078,12 +2079,39 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     b.classList.toggle('pending', n > 0);
     if (n && !b.disabled) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
   }
-  /* 実機につないでいる間は「デモで試す」の代わりに「書き込み」を出す */
+  /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
   function updateHeaderButtons() {
-    const real = !!st.vial && !st.demo;
-    $('btnDemo').hidden = real; $('btnWrite').hidden = !real;
-    if (!real) $('hdrMsg').hidden = true;
+    const on = !!st.vial;
+    $('btnDemo').hidden = on; $('btnWrite').hidden = !on;
+    const c = $('btnConnect');
+    c.textContent = on ? '解除' : 'キーボードに接続';
+    c.classList.toggle('primary', !on);
+    c.title = on ? (st.demo ? 'デモを終えて最初の画面に戻ります' : 'キーボードとの接続を切って最初の画面に戻ります') : '';
+    if (!on) $('hdrMsg').hidden = true;
     updateWriteBtn();
+  }
+  /* 解除: 接続を切って、最初の画面に戻す */
+  async function endSession() {
+    if (!st.vial) return;
+    const p = pendingCount();
+    if ((p.macros || p.keys) && !confirm('まだ書き込んでいない変更が ' + (p.macros + p.keys) + ' 件あります。破棄して解除しますか？')) return;
+    if (st.capturing) setCapture(false);
+    if (!$('kSpecialMenu').hidden) keysMenu(false);
+    setMode('macro');  /* 仮想キーボードを元の場所に戻す */
+    if (D.pip) { try { D.pip.close(); } catch (e) { /* すでに閉じている */ } }
+    const v = st.vial, dev = st.hid;
+    if (v && v.tr) { v.tr.closed = true; v.tr.onPush = null; v.onLayer = null; }
+    st.vial = null; st.hid = null; st.mock = null; st.demo = false; st.macros = []; st.orig = [];
+    dispWatch();
+    if (dev) { try { await dev.close(); } catch (e) { /* 閉じられなくても続ける */ } }
+    D.def = null; D.keymap = null; D.enc = null; D.state = null; D.supported = null; D.pin = null; D.trig = false;
+    K.edit = null; K.encEdit = null; K.trig = false;
+    ['modes', 'app', 'bar', 'keys', 'disp'].forEach(id => { $(id).hidden = true; });
+    $('intro').hidden = false;
+    $('status').textContent = '未接続'; $('devName').hidden = true; $('usebar').hidden = true;
+    tipHide(document); banner('');
+    updateHeaderButtons();
+    window.scrollTo(0, 0);
   }
   let hdrTimer = null;
   function hdrMsg(msg, ok) {
@@ -2449,7 +2477,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   });
 
   window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
-  $('btnConnect').addEventListener('click', connect);
+  $('btnConnect').addEventListener('click', () => (st.vial ? endSession() : connect()));
   $('btnDemo').addEventListener('click', startDemo);
 })();
 </script>
