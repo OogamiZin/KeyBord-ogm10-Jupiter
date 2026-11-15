@@ -319,7 +319,6 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     </div>
     <span id="hdrMsg" hidden></span>
     <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、Vial と同じ .vil 形式で保存します">エクスポート</button>
-    <button id="btnNotify" hidden title="レイヤーが切り替わったら、Mac / Windows の通知で知らせます（実験的な機能。このページを開いている間だけ動きます）">🔔 レイヤー通知</button>
     <button id="btnImport2" hidden title=".vil（Vial やこのツールで保存したもの）から、全体の設定を読み込みます">インポート</button>
     <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
     <button id="btnConnect" class="primary">キーボードに接続</button>
@@ -1706,7 +1705,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; K.defaults = null; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
-    v.onLayer = s => { notifyLayer(s); D.state = s; D.supported = true; dispRender(); if (VJ.open) vjUpdate(); };
+    v.onLayer = s => { D.state = s; D.supported = true; dispRender(); if (VJ.open) vjUpdate(); };
     setMode('macro');
     const s = await v.unlockStatus();
     if (s.inProgress) await runUnlock();
@@ -1996,37 +1995,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     dispRender(); dispWatch();
   }
   /* 表示中（または小窓を開いている間）だけ、1秒ごとに状態を問い合わせる。これが通知の申し込みも兼ねる */
-  /* ---- 実験: レイヤーが切り替わったら Mac / Windows の通知で知らせる（このページを開いている間だけ動く） ---- */
-  const NOTI = { on: false, last: null, note: null };
-  function notiLabel(s) {
-    const names = (D.def && D.def.layerNames) || (isJupiter() ? JUPITER.layerNames : null);
-    const n = names ? names[s.highest] : null;
-    return 'レイヤー ' + s.highest + (n ? '（' + n.group + (n.name ? ' ' + n.name : '') + '）' : '');
-  }
-  function notifyLayer(s) {
-    if (!NOTI.on || !s || !s.supported) return;
-    if (NOTI.last === null) { NOTI.last = s.highest; return; }   /* オンにした直後の状態は通知しない */
-    if (s.highest === NOTI.last) return;
-    NOTI.last = s.highest;
-    try {
-      if (NOTI.note) NOTI.note.close();
-      NOTI.note = new Notification('ogm10-Jupiter', { body: notiLabel(s) + ' に切り替わりました', tag: 'ogm10-layer', renotify: true, silent: true });
-    } catch (e) { /* 通知を出せないときは何もしない */ }
-  }
-  async function notifyToggle() {
-    if (!('Notification' in window)) { alert('このブラウザは通知に対応していません'); return; }
-    if (!NOTI.on) {
-      const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-      if (p !== 'granted') { alert('通知が許可されていません。アドレスバー左のアイコンから、このサイトの「通知」を許可してください'); return; }
-      NOTI.on = true; NOTI.last = null;
-    } else {
-      NOTI.on = false;
-    }
-    const b = $('btnNotify'); b.classList.toggle('on', NOTI.on); b.textContent = NOTI.on ? '🔔 通知オン' : '🔔 レイヤー通知';
-    dispWatch(); if (NOTI.on) dispPoll();
-  }
   function dispWatch() {
-    const want = !!st.vial && (D.mode === 'disp' || !!D.pip || NOTI.on);
+    const want = !!st.vial && (D.mode === 'disp' || !!D.pip);
     if (want && !D.timer) D.timer = setInterval(dispPoll, 1000);
     if (!want && D.timer) { clearInterval(D.timer); D.timer = null; }
   }
@@ -2038,7 +2008,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       if (s && s.supported === false) { if (D.supported !== false) { D.supported = false; if (D.pin === null) D.pin = 0; dispRender(); } }
       else if (s) {
         const changed = !D.state || D.state.layers !== s.layers || D.state.def !== s.def || D.supported !== true;
-        notifyLayer(s); D.state = s; D.supported = true; if (changed) dispRender();
+        D.state = s; D.supported = true; if (changed) dispRender();
       }
     } catch (e) { /* 次の周期でやり直す */ }
     finally { D.busy = false; }
@@ -2642,7 +2612,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
   function updateHeaderButtons() {
     const on = !!st.vial;
-    $('btnDemo').hidden = on; $('btnWrite').hidden = !on; $('btnVj').hidden = !(on && st.demo); $('btnExport2').hidden = !on; $('btnNotify').hidden = !on; $('btnImport2').hidden = !on;
+    $('btnDemo').hidden = on; $('btnWrite').hidden = !on; $('btnVj').hidden = !(on && st.demo); $('btnExport2').hidden = !on; $('btnImport2').hidden = !on;
     const c = $('btnConnect');
     c.textContent = on ? '接続解除' : 'キーボードに接続';
     c.classList.toggle('primary', !on);
@@ -2820,7 +2790,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     } catch (e) { hdrMsg('インポートできませんでした: ' + e.message, false); }
   }
   $('btnExport2').addEventListener('click', exportAll);
-  $('btnNotify').addEventListener('click', notifyToggle);
   $('btnImport2').addEventListener('click', () => $('fileAll').click());
   $('fileAll').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importAll(f); });
   $('kDefault').addEventListener('click', async () => {
