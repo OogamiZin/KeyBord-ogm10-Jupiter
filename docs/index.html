@@ -365,13 +365,13 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <p class="hint"><label><input type="checkbox" id="kHold" checked> 修飾キーは組み合わせ用に保持する（外すと、修飾キー単体を割り当て）</label></p>
       <div id="kvk"></div>
       <details id="kTextBox">
-        <summary>レイヤーをテキストで編集・貼り付け</summary>
+        <summary>レイヤーをテキストで編集・レイヤー単位でのインポート</summary>
         <p class="hint">表示中のレイヤー全体を文字で編集できます。別のレイヤーの内容や、keymap.c の <code>[0] = LAYOUT( … )</code> をそのまま貼り付けて「レイヤーに反映」を押してください。キーの並びは行・列の順です。</p>
         <div class="row">
           <button id="kTextShow">今の内容を表示</button>
           <button id="kTextApply" class="primary">レイヤーに反映</button>
           <span class="grow"></span>
-          <button id="kVilPick">Vial の保存ファイル（.vil）を読み込む</button>
+          <button id="kVilPick" title="Vial やこのツールで保存した .vil から、選んだレイヤーだけを取り込みます">レイヤー単位でのインポート(.vil)</button>
           <input type="file" id="kVilFile" accept=".vil,application/json" hidden>
           <select id="kVilLayer" hidden></select>
           <button id="kVilUse" hidden>このレイヤーを下の欄に入れる</button>
