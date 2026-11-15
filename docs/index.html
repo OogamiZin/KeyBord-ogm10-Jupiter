@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ogm10-Jupiter 設定ツール</title>
+<title>ogm10-Jupiter設定</title>
 <style>
 :root {
   --bg: #f4f5f7; --panel: #ffffff; --ink: #1c2330; --sub: #5d6878; --line: #d8dde5;
@@ -26,7 +26,8 @@ h1 { font-size: 16px; margin: 0; font-weight: 650; }
 h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
 h2 { font-size: 14px; margin: 0; }
 .conn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
-#status { color: var(--sub); font-size: 13px; }
+#status { color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+#status.over { color: var(--warn); font-weight: 600; }
 button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .5; cursor: default; }
@@ -185,11 +186,11 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 </head>
 <body>
 <header>
-  <h1>ogm10-Jupiter 設定ツール<small>試作</small></h1>
+  <h1>ogm10-Jupiter設定</h1>
   <nav id="modes" hidden>
-    <button id="tabMacro" class="on">マクロ編集</button>
-    <button id="tabKeys">キー割り当て</button>
-    <button id="tabDisp">レイヤー表示</button>
+    <button id="tabMacro" class="on">マクロ</button>
+    <button id="tabKeys">キー割当</button>
+    <button id="tabDisp">レイヤー監視</button>
   </nav>
   <div class="conn">
     <span id="status">未接続</span>
@@ -1407,7 +1408,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const v = new C.Vial(transport);
     try { await v.init(); } catch (e) { banner('接続できませんでした: ' + e.message); return; }
     st.vial = v;
-    $('status').textContent = name + ' ／ マクロ ' + v.macroCount + ' 個 ／ 保存領域 ' + v.bufSize + ' バイト';
+    $('status').textContent = '-/' + v.bufSize + 'Byte';
+    $('status').title = name + '（マクロ ' + v.macroCount + ' 個）';
     $('intro').hidden = true; $('modes').hidden = false;
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null;
@@ -1706,7 +1708,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         menu.appendChild(b);
       });
     };
-    group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。「マクロ編集」で内容を書けます。']; }));
+    group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。上部の「マクロ」で内容を書けます。']; }));
     group('専用キー', D.def.custom.map((c, i) => [c.name || ('USER' + i), c.short, c.title, (c.name && c.name !== c.short ? c.name + '\n' : '') + (c.title || 'ファームウェアで定義された専用のキーです。')]));
     group('マウス', [['BTN1', '左クリック'], ['BTN2', '右クリック'], ['BTN3', '中クリック'], ['BTN4', 'ボタン4（戻る）'], ['BTN5', 'ボタン5（進む）'],
       ['WH_U', 'ホイール↑'], ['WH_D', 'ホイール↓'], ['WH_L', 'ホイール←'], ['WH_R', 'ホイール→'], ['MS_U', 'カーソル↑'], ['MS_D', 'カーソル↓'], ['MS_L', 'カーソル←'], ['MS_R', 'カーソル→']]
@@ -1955,6 +1957,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     m.classList.toggle('over', used > v.bufSize);
     m.querySelector('.fill').style.width = Math.min(100, used / v.bufSize * 100) + '%';
     m.querySelector('.txt').textContent = '使用量 ' + used + ' / ' + v.bufSize + ' バイト' + (used > v.bufSize ? '（超過しています）' : '');
+    /* 画面上部: マクロの保存領域の使用量 */
+    $('status').textContent = used + '/' + v.bufSize + 'Byte(' + Math.round(used / v.bufSize * 100) + '%)';
+    $('status').classList.toggle('over', used > v.bufSize);
     return { comp, used };
   }
 
