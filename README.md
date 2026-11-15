@@ -20,7 +20,7 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 
 ブラウザだけで、マクロの編集、キー割り当ての変更、今のレイヤーのキー表示ができます。インストールは不要です。
 
-**https://oogamizin.github.io/KeyBord-ogm10-Jupiter/**
+**https://oogamizin.github.io/KeyBord.ogm10-Jupiter/**
 
 パソコンの Chrome か Edge で開き、「キーボードに接続」を押してください。使い方は [docs/README.md](docs/README.md) にあります。
 
