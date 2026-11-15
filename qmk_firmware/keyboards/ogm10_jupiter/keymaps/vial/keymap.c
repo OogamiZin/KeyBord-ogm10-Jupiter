@@ -19,7 +19,11 @@ enum custom_keycodes {
     LAYER_INFO,
     SQL_SELECT_TMP,
     LAYER_STATUS,
-    AUTO_CLICK,          // 押している間、左クリックを連打する
+    AUTO_CLICK,          // 押している間、左クリックを連打する（1 秒に 20 回）
+    AUTO_CLICK_5,        // 同（1 秒に 5 回）
+    AUTO_CLICK_10,       // 同（1 秒に 10 回）
+    AUTO_CLICK_30,       // 同（1 秒に 30 回）
+    AUTO_CLICK_50,       // 同（1 秒に 50 回）
 };
 /* USER INCLUDE END */
 
@@ -430,15 +434,26 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
 }
 
 // ---- AUTO_CLICK: 押している間、左クリックを連打する ----
-// AUTO_CLICK_HALF_MS ごとにボタンを押す/離すを切り替える（25ms なら 1 秒に 20 回）
-#define AUTO_CLICK_HALF_MS 25
+// auto_click_half (ms) ごとにボタンを押す/離すを切り替える（25ms なら 1 秒に 20 回）。押したキーで速さが決まる
+// AUTO_CLICK = 20 回/秒, AUTO_CLICK_5 / _10 / _30 / _50 = 5 / 10 / 30 / 50 回/秒
+static uint16_t auto_click_half = 25;
+
+static uint16_t auto_click_half_for(uint16_t keycode) {
+    switch (keycode) {
+        case AUTO_CLICK_5:  return 100;
+        case AUTO_CLICK_10: return 50;
+        case AUTO_CLICK_30: return 17;
+        case AUTO_CLICK_50: return 10;
+        default:            return 25;   // AUTO_CLICK
+    }
+}
 static bool     auto_click_held = false;
 static bool     auto_click_down = false;
 static uint16_t auto_click_timer = 0;
 
 static void auto_click_task(void) {
     if (!auto_click_held) return;
-    if (timer_elapsed(auto_click_timer) < AUTO_CLICK_HALF_MS) return;
+    if (timer_elapsed(auto_click_timer) < auto_click_half) return;
     auto_click_timer = timer_read();
     if (auto_click_down) {
         unregister_code(KC_MS_BTN1);
@@ -503,10 +518,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     switch (keycode) {
         case AUTO_CLICK:
+        case AUTO_CLICK_5:
+        case AUTO_CLICK_10:
+        case AUTO_CLICK_30:
+        case AUTO_CLICK_50:
             auto_click_held = record->event.pressed;
             if (record->event.pressed) {
+                auto_click_half = auto_click_half_for(keycode);
                 auto_click_down = false;
-                auto_click_timer = timer_read() - AUTO_CLICK_HALF_MS;   // 押した瞬間に1回目
+                auto_click_timer = timer_read() - auto_click_half;   // 押した瞬間に1回目
             } else if (auto_click_down) {
                 unregister_code(KC_MS_BTN1);
                 auto_click_down = false;
