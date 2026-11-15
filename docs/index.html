@@ -112,6 +112,7 @@ progress { width: 100%; height: 12px; }
 .lside #dChips, .lside #kTabs { display: flex; flex-direction: column; gap: 8px; }
 .lside .lgroup { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; }
 .lside .lgroup > .gname { margin: 0 0 1px 2px; font-size: 13px; }
+.lside .lgroup.fold > .gname { margin-bottom: 0; }
 .lside .lchip { width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.pip .lwrap { grid-template-columns: 84px minmax(0, 1fr); gap: 8px; }
 body.pip .lside { position: sticky; }
@@ -128,6 +129,11 @@ body.pip .nopip { display: none; }
 .lbadge { font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; background: var(--gc, var(--sub)); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .lgroup { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 8px; border: 1px solid var(--gc, var(--line)); border-radius: 8px; border-left-width: 5px; }
 .lgroup > .gname { font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); margin-right: 2px; white-space: nowrap; }
+button.gname { font: inherit; font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); background: none; border: 0; border-radius: 4px; padding: 0 2px; cursor: pointer; text-align: left; }
+button.gname:hover { background: color-mix(in srgb, var(--gc, var(--line)) 15%, transparent); }
+button.gname .tw { display: inline-block; width: 1em; font-size: 10px; }
+.lgroup.fold > .lchip { display: none; }
+.lgroup.fold { padding-bottom: 3px; }
 .lgroup.act { background: color-mix(in srgb, var(--gc, var(--line)) 12%, transparent); }
 .g0 { --gc: #2f6fde; } .g1 { --gc: #8a4fd0; } .g2 { --gc: #c77700; } .g3 { --gc: #1d8a4e; } .g4 { --gc: #c0392b; } .g5 { --gc: #1a8f96; }
 @media (prefers-color-scheme: dark) { .g0 { --gc: #5b93f5; } .g1 { --gc: #b085f0; } .g2 { --gc: #f0a83c; } .g3 { --gc: #5fcf8f; } .g4 { --gc: #ff8a80; } .g5 { --gc: #5fd0d6; } }
@@ -1446,7 +1452,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('intro').hidden = true; $('modes').hidden = false;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
-    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false;
+    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
     $('btnSave').disabled = false; $('btnReload').disabled = false;
@@ -1572,6 +1578,22 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     el.addEventListener('mouseleave', () => tipHide(el.ownerDocument));
     return true;
   }
+  /* ---- Win / Mac のまとまりの折りたたみ ----
+     自分で開け閉めしていない間は、接続先と逆の OS 側を折りたたむ（接続先が分からないときはどちらも開く） */
+  const FOLD = {};
+  function connectedOs() {
+    if (D.state && D.state.supported) return D.state.osDefault === 3 ? 'Mac' : 'Win';
+    return null;
+  }
+  function groupFolded(group) {
+    if (group in FOLD) return FOLD[group];
+    const os = connectedOs();
+    return !!os && (group === 'Win' || group === 'Mac') && group !== os;
+  }
+  function toggleGroup(group) {
+    FOLD[group] = !groupFolded(group);
+    dispRender(); keysRender();
+  }
   /* レイヤー番号のボタンを、用途のまとまりごとに枠で囲んで並べる。make(l) がボタンを返す */
   function buildLayerChips(box, doc, count, activeMask, make) {
     box.textContent = '';
@@ -1582,7 +1604,21 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       if (info && info.group) {
         if (info.group !== last) {
           wrap = doc.createElement('span'); wrap.className = 'lgroup g' + info.gi;
-          const g = doc.createElement('span'); g.className = 'gname'; g.textContent = info.group; wrap.appendChild(g);
+          const members = [...Array(count).keys()].filter(x => { const i2 = layerInfo(x); return i2 && i2.group === info.group; });
+          if (members.length > 1) {
+            /* 複数のレイヤーがあるまとまり（Win / Mac）は、名前を押すと折りたためる */
+            const folded = groupFolded(info.group);
+            if (folded) wrap.classList.add('fold');
+            const g = doc.createElement('button'); g.type = 'button'; g.className = 'gname';
+            const tw = doc.createElement('span'); tw.className = 'tw'; tw.textContent = folded ? '▸' : '▾';
+            g.append(tw, doc.createTextNode(info.group));
+            g.title = folded ? '開く' : '折りたたむ';
+            g.setAttribute('aria-expanded', String(!folded));
+            g.addEventListener('click', () => toggleGroup(info.group));
+            wrap.appendChild(g);
+          } else {
+            const g = doc.createElement('span'); g.className = 'gname'; g.textContent = info.group; wrap.appendChild(g);
+          }
           box.appendChild(wrap);
         }
         if ((activeMask >>> l) & 1) wrap.classList.add('act');
@@ -1590,14 +1626,14 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       } else { box.appendChild(b); last = null; }
     }
   }
-  /* ---- 独自トリガー（ファームウェアに組み込んだ特殊な操作）の一覧 ---- */
+  /* ---- 独自トリガ（ファームウェアに組み込んだ特殊な操作）の一覧 ---- */
   const T = { sel: 0 };
   const trigList = () => (isJupiter() ? JUPITER.triggers : null);
-  /* レイヤー一覧の下に「独自トリガー」の項目を足す */
+  /* レイヤー一覧の下に「独自トリガ」の項目を足す */
   function addTrigChip(box, doc, on, onClick) {
     if (!trigList()) return;
     const wrap = doc.createElement('span'); wrap.className = 'lgroup gt' + (on ? ' act' : '');
-    const b = doc.createElement('button'); b.className = 'lchip trigchip' + (on ? ' on' : ''); b.textContent = '独自トリガー';
+    const b = doc.createElement('button'); b.className = 'lchip trigchip' + (on ? ' on' : ''); b.textContent = '独自トリガ';
     b.title = 'ファームウェアに組み込んだ特殊な操作の一覧';
     b.addEventListener('click', onClick);
     wrap.appendChild(b); box.appendChild(wrap);
@@ -1733,7 +1769,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     E.trig.hidden = !D.trig; E.board.hidden = !!D.trig; E.hint.hidden = !!D.trig;
     if (D.trig) {
       E.legend.hidden = true; tipHide(doc);
-      E.status.textContent = '独自トリガーの一覧（レイヤー番号を押すと盤面の表示に戻ります）';
+      E.status.textContent = '独自トリガの一覧（レイヤー番号を押すと盤面の表示に戻ります）';
       renderTrig(E.trig, doc);
       return;
     }
@@ -1816,6 +1852,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       if (!D.keymap) { $('kStatus').textContent = '割り当てを読み込み中…'; await dispLoadKeymap(); }
     } catch (e) { $('kStatus').textContent = '読み込みに失敗: ' + e.message; return; }
     if (!K.edit) { K.edit = clone(D.keymap); K.encEdit = clone(D.enc); }
+    if (!D.state && D.supported !== false) await dispPoll();  /* 接続先の OS（折りたたむ側）を知るため */
     const layers = [...Array(D.layers).keys()];
     for (const id of ['kLtLayer', 'kOpLayer']) {
       const sel = $(id), keep = sel.value; sel.textContent = '';
@@ -1874,7 +1911,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     addTrigChip($('kTabs'), document, K.trig, () => { K.trig = !K.trig; if (st.capturing) setCapture(false); keysRender(); keysShowSel(); });
     $('kTrig').hidden = !K.trig; $('kboard').hidden = !!K.trig; $('kedit').hidden = !!K.trig;
     if (K.trig) {
-      $('kStatus').textContent = (changes.length ? '未保存の変更 ' + changes.length + ' 件 ／ ' : '') + '独自トリガーの一覧（レイヤー番号を押すと編集に戻ります）';
+      $('kStatus').textContent = (changes.length ? '未保存の変更 ' + changes.length + ' 件 ／ ' : '') + '独自トリガの一覧（レイヤー番号を押すと編集に戻ります）';
       tipHide(document); renderTrig($('kTrig'), document);
       return;
     }
