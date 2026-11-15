@@ -246,6 +246,8 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .xcard details label { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
 #xEdit { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 #xEdit #xText { flex: 1; min-width: 220px; font-family: var(--mono); }
+.vjbtn { border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #7c3aed, #2f6fde); box-shadow: 0 2px 8px rgba(76, 60, 220, .35); white-space: nowrap; }
+.vjbtn:hover { filter: brightness(1.1); }
 .vjpanel { padding: 8px 10px; background: var(--bg); font-size: 13px; }
 .vjhead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .vjhead .grow { flex: 1; }
@@ -309,6 +311,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <button id="tabDisp">レイヤ監視</button>
   </nav>
   <div class="conn">
+    <button id="btnVj" class="vjbtn" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">⌨ 仮想キーボード起動</button>
     <div id="devbox">
       <div id="devName" hidden></div>
       <div id="status">未接続</div>
@@ -320,7 +323,6 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
-    <button id="btnVj" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">仮想Jupiter</button>
     <button id="btnWrite" class="wbtn" hidden title="マクロ・キー割当・拡張（タップダンスなど）の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
   </div>
 </header>
@@ -3208,10 +3210,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
      パソコンには何も送らず、結果は小窓の入力欄に出す。 */
   const VJ = { open: false, win: null, keys: [], els: [], held: new Map(), latched: new Set(), mods: 0, osm: 0, osl: -1, td: new Map() };
   const VJ_TERM = 200;
+  /* 小窓に移すと document.getElementById では見つからなくなるので、要素は最初に覚えておく */
+  const VJE = {}; ['vjBoard', 'vjClear', 'vjClose', 'vjFloat', 'vjHome', 'vjLayer', 'vjLog', 'vjMods', 'vjOut', 'vjPanel'].forEach(id => { VJE[id] = $(id); });
   const fold4 = m => (m | (m >> 4)) & 0x0F;  /* 左右を区別しない Ctrl/Shift/Alt/GUI */
   const qmods = m5 => ((m5 & 0x10) ? (m5 & 0x0F) << 4 : (m5 & 0x0F));  /* QMK の 5 ビット修飾 → 8 ビット */
   const vjModNames = m => ['Ctrl', 'Shift', 'Alt', 'GUI'].filter((n, i) => fold4(m) & (1 << i));
-  function vjLog(msg) { const l = $('vjLog'); l.textContent = msg; l.title = msg; }
+  function vjLog(msg) { const l = VJE.vjLog; l.textContent = msg; l.title = msg; }
   const vjLayers = () => ({ ls: st.mock.ls >>> 0, ds: st.mock.ds >>> 0 });
   function vjSetLayers(ls, ds) { st.mock.setLayerState(ls >>> 0, ds >>> 0); vjUpdate(); }
   function vjLayerOn(l) { const s = vjLayers(); vjSetLayers(s.ls | (1 << l), s.ds); }
@@ -3227,7 +3231,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     return 0;
   }
   const vjMods = () => VJ.mods | VJ.osm;
-  function vjText(text) { const t = $('vjOut'); t.setRangeText(text, t.selectionStart, t.selectionEnd, 'end'); t.scrollTop = t.scrollHeight; }
+  function vjText(text) { const t = VJE.vjOut; t.setRangeText(text, t.selectionStart, t.selectionEnd, 'end'); t.scrollTop = t.scrollHeight; }
   function vjChar(code, shift) {
     if (code >= 0x04 && code <= 0x1D) { const c = String.fromCharCode(97 + code - 4); return shift ? c.toUpperCase() : c; }
     if (code >= 0x59 && code <= 0x63) return '1234567890.'[code - 0x59];
@@ -3252,7 +3256,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     }
     const fm = fold4(mods), lab = C.keyLabel(kc, { custom: D.def.custom });
     if (fm & 0x0D) { vjLog(vjModNames(mods).concat([lab.main || C.keycodeToQmk(kc, D.def.custom)]).join('+') + ' を送信'); return; }
-    const t = $('vjOut'), p = t.selectionStart;
+    const t = VJE.vjOut, p = t.selectionStart;
     switch (kc) {
       case 0x2A: if (t.selectionEnd > p) t.setRangeText('', p, t.selectionEnd, 'end'); else if (p > 0) t.setRangeText('', p - 1, p, 'end'); return;
       case 0x4C: if (t.selectionEnd > p) t.setRangeText('', p, t.selectionEnd, 'end'); else t.setRangeText('', p, p + 1, 'end'); return;
@@ -3362,7 +3366,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function vjRelease(i) { const h = VJ.held.get(i); if (!h) return; VJ.held.delete(i); vjUp(h); vjUpdate(); }
   function vjReleaseAll() { [...VJ.held.keys()].forEach(vjRelease); VJ.latched.clear(); VJ.mods = 0; VJ.osm = 0; }
   function vjBuild() {
-    const LAYOUT = D.def.layout, board = $('vjBoard');
+    const LAYOUT = D.def.layout, board = VJE.vjBoard;
     board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
     board.textContent = ''; VJ.keys = LAYOUT.keys; VJ.els = [];
     LAYOUT.keys.forEach((k, i) => {
@@ -3389,8 +3393,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function vjUpdate() {
     if (!VJ.open || !st.mock || !D.def) return;
     const top = vjTop(), ctx = { macros: st.macros, custom: D.def.custom };
-    $('vjLayer').textContent = layerLabel(top);
-    const mn = vjModNames(vjMods()); $('vjMods').textContent = (mn.length ? mn.join('+') : '') + (VJ.osl >= 0 ? ' 次の1打: レイヤー ' + VJ.osl : '');
+    VJE.vjLayer.textContent = layerLabel(top);
+    const mn = vjModNames(vjMods()); VJE.vjMods.textContent = (mn.length ? mn.join('+') : '') + (VJ.osl >= 0 ? ' 次の1打: レイヤー ' + VJ.osl : '');
     VJ.keys.forEach((k, i) => {
       const el = VJ.els[i], h = VJ.held.get(i), kc = h ? h.kc : vjKc(k), lab = C.keyLabel(kc, ctx);
       el.className = 'k ' + lab.kind + (k.enc !== undefined ? ' enc' : '') + (h ? ' down' : '') + (VJ.latched.has(i) ? ' latch' : '');
@@ -3402,7 +3406,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       el.title = C.keycodeToQmk(kc, D.def.custom);
     });
   }
-  function vjHomeBack() { $('vjHome').appendChild($('vjPanel')); $('vjFloat').hidden = true; }
+  function vjHomeBack() { VJE.vjHome.appendChild(VJE.vjPanel); VJE.vjFloat.hidden = true; }
   async function vjOpen() {
     if (!st.mock) return;
     if (VJ.open) { if (VJ.win) VJ.win.focus(); return; }
@@ -3413,13 +3417,13 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         const w = await window.documentPictureInPicture.requestWindow({ width: 820, height: 440 });
         document.querySelectorAll('style').forEach(x => w.document.head.appendChild(x.cloneNode(true)));
         w.document.body.classList.add('vjwin');
-        w.document.body.appendChild($('vjPanel'));
+        w.document.body.appendChild(VJE.vjPanel);
         VJ.win = w;
         w.addEventListener('pagehide', () => { VJ.win = null; vjReleaseAll(); VJ.open = false; vjHomeBack(); });
         vjUpdate(); return;
       } catch (e) { /* 小窓が使えないときは、画面の上に浮かせる */ }
     }
-    $('vjFloat').appendChild($('vjPanel')); $('vjFloat').hidden = false; vjUpdate();
+    VJE.vjFloat.appendChild(VJE.vjPanel); VJE.vjFloat.hidden = false; vjUpdate();
   }
   function vjClose() {
     if (!VJ.open) return;
@@ -3427,8 +3431,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     vjReleaseAll(); VJ.open = false; vjHomeBack();
   }
   $('btnVj').addEventListener('click', vjOpen);
-  $('vjClose').addEventListener('click', vjClose);
-  $('vjClear').addEventListener('click', () => { $('vjOut').value = ''; vjLog(''); });
+  VJE.vjClose.addEventListener('click', vjClose);
+  VJE.vjClear.addEventListener('click', () => { VJE.vjOut.value = ''; vjLog(''); });
 
   window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length || dynChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
   $('btnConnect').addEventListener('click', () => (st.vial ? endSession() : connect()));
