@@ -98,11 +98,6 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 .vkey .vs { position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; color: var(--accent); }
 .vkey.on .vs { color: inherit; }
 /* テンキーはキー割当のときだけ、音量などの列はマクロのときだけ出す（音量などはキー割当では「一覧から選ぶ」に入っている） */
-.vkblock.vknum { display: none; }
-#kvk .vkblock.vknum { display: flex; }
-#xvk .vkblock.vknum { display: flex; }
-#kvk .vkblock.vkextra { display: none; }
-#xvk .vkblock.vkextra { display: none; }
 .vkey.on { background: var(--dirty); border-color: var(--dirty); color: #000; }
 .vkgap { flex: 1 1 0; min-width: 0; }
 #toast { font-size: 13px; flex: 1; min-width: 0; }
@@ -490,6 +485,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <label><input type="radio" name="vkMode" value="down">押したままにする</label>
       <label><input type="radio" name="vkMode" value="up">離す</label>
       <span class="cap" id="vkHint">Ctrl・Shift などを先にクリックすると、次のキーとの組み合わせになります。</span>
+      <div class="group" id="mSpecialWrap" style="position:relative"><span class="cap">マクロ・専用キー・その他</span><button id="mSpecialBtn" aria-haspopup="true">一覧から選ぶ ▾</button></div>
     </div>
     <div class="vkscroll">
       <div id="vkTop">
@@ -1909,7 +1905,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('app').hidden = m !== 'macro'; $('bar').hidden = m !== 'macro'; $('keys').hidden = m !== 'keys'; $('disp').hidden = m !== 'disp'; $('ext').hidden = m !== 'ext';
     /* 「一覧から選ぶ」のメニューは、キー割当と拡張で共有する */
     if (!$('kSpecialMenu').hidden) keysMenu(false);
-    if (m === 'ext') $('xSpecialWrap').appendChild($('kSpecialMenu')); else if (m === 'keys') $('kSpecialBtn').parentNode.appendChild($('kSpecialMenu'));
+    if (m === 'ext') $('xSpecialWrap').appendChild($('kSpecialMenu')); else if (m === 'keys') $('kSpecialBtn').parentNode.appendChild($('kSpecialMenu')); else if (m === 'macro') $('mSpecialWrap').appendChild($('kSpecialMenu'));
+    if (D.def && m !== 'disp') buildSpecialMenu();  /* マクロ編集では「マクロ」のグループを出さない */
     /* 仮想キーボードは、マクロ編集ではフッター、キー割り当てでは編集欄の中に置く */
     const vk = $('vk');
     vkLatched.clear(); vkSync();
@@ -2092,12 +2089,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         const d = document.createElement('span'); d.className = 'md'; d.textContent = short;
         b.append(n, d);
         if (desc) { b.addEventListener('mouseenter', () => tipShow(b, name, desc, true)); b.addEventListener('mouseleave', () => tipHide(document)); b.addEventListener('focus', () => tipShow(b, name, desc, true)); b.addEventListener('blur', () => tipHide(document)); }
-        b.addEventListener('click', () => { keysMenu(false); (D.mode === 'ext' ? extAssignText : keysAssignText)(value); });
+        b.addEventListener('click', () => { keysMenu(false); (D.mode === 'ext' ? extAssignText : D.mode === 'macro' ? macroInsertKey : keysAssignText)(value); });
         sec.appendChild(b);
       });
     };
-    group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。上部の「マクロ」で内容を書けます。']; }));
-    if (X.cur && X.cur.td.length) group('タップダンス', X.cur.td.map((e, i) => ['TD(' + i + ')', 'TD(' + i + ')', tdSummary(e),
+    if (D.mode !== 'macro') group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。上部の「マクロ」で内容を書けます。']; }));
+    if (D.mode !== 'macro' && X.cur && X.cur.td.length) group('タップダンス', X.cur.td.map((e, i) => ['TD(' + i + ')', 'TD(' + i + ')', tdSummary(e),
       'タップダンス ' + i + '\n' + (tdSummary(e) === '（空）' ? 'まだ何も設定されていません。' : tdSummary(e)) + '\n内容は上部の「拡張」で設定します。']));
     group('専用キー', D.def.custom.map((c, i) => [c.name || ('USER' + i), c.short, c.title, (c.name && c.name !== c.short ? c.name + '\n' : '') + (c.title || 'ファームウェアで定義された専用のキーです。')]));
     group('マウス', [['BTN1', '左クリック'], ['BTN2', '右クリック'], ['BTN3', '中クリック'], ['BTN4', 'ボタン4（戻る）'], ['BTN5', 'ボタン5（進む）'],
@@ -2268,7 +2265,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     menu.hidden = !open; tipHide(document);
     if (!open) return;
     /* 下に入りきらないときは上に開く */
-    const r = $(D.mode === 'ext' ? 'xSpecialBtn' : 'kSpecialBtn').getBoundingClientRect();
+    const r = $(D.mode === 'ext' ? 'xSpecialBtn' : D.mode === 'macro' ? 'mSpecialBtn' : 'kSpecialBtn').getBoundingClientRect();
     menu.classList.toggle('up', r.bottom + 350 > window.innerHeight && r.top > 350);
     menu.scrollTop = 0;
   }
@@ -2862,6 +2859,24 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     insert(text);
   });
 
+  /* 「一覧から選ぶ」で選んだキーをマクロに入れる（仮想キーボードの「1回押す／押したまま／離す」に従う） */
+  function macroInsertKey(value) {
+    let kc;
+    try { kc = C.keycodeFromText(value, D.def ? D.def.custom : []); } catch (e) { toast(e.message, false); return; }
+    const mode = vkMode(), tok = C.codeToken(kc);
+    if (mode === 'tap') {
+      const mods = MOD_ORDER.filter(m => vkLatched.has(m));
+      vkLatched.clear(); vkSync();
+      insert('{' + (mods.length && kc < 0x100 ? mods.join('+') + '+' : '') + tok + '}');
+    } else insert('{' + (mode === 'down' ? '+' : '-') + tok + '}');
+  }
+  $('mSpecialBtn').addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!$('kSpecialMenu').hidden) { keysMenu(false); return; }
+    if (!D.def) { try { await dispLoadKeymap(); } catch (err) { toast('一覧を作れませんでした: ' + err.message, false); return; } }
+    if ($('kSpecialMenu').parentNode !== $('mSpecialWrap')) $('mSpecialWrap').appendChild($('kSpecialMenu'));
+    await ensureDyn(); buildSpecialMenu(); keysMenu(true);
+  });
   function insert(text) {
     ta.focus();
     let done = false;
@@ -2985,9 +3000,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   const VK_NUM = [
     ['NUM', 'PENT', 'PPLS'], ['PSLS', 'PAST', 'PMNS'], ['P7', 'P8', 'P9'], ['P4', 'P5', 'P6'], ['P1', 'P2', 'P3'], [['P0', 2], 'PDOT'],
   ];
-  const VK_EXTRA = [
-    ['MUTE', 'VOLD', 'VOLU'], ['MPRV', 'MPLY', 'MNXT'], ['BRID', 'BRIU', 'CALC'], ['LNG2', 'LNG1', 1], ['F13', 'F14', 'F15'], ['PWR', 'SLEP', 1],
-  ];
   const MOD_ORDER = ['LCTL', 'RCTL', 'LSFT', 'RSFT', 'LALT', 'RALT', 'LGUI', 'RGUI'];
   const vkLatched = new Set();
   const vkModButtons = [];
@@ -3008,7 +3020,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   function vkBuild() {
     const root = $('vkKeys');
-    [[VK_MAIN, 15, ''], [VK_NAV, 3, ''], [VK_NUM, 3, ' vknum'], [VK_EXTRA, 3, ' vkextra']].forEach(([rows, units, cls]) => {
+    [[VK_MAIN, 15, ''], [VK_NAV, 3, ''], [VK_NUM, 3, ' vknum']].forEach(([rows, units, cls]) => {
       const block = document.createElement('div'); block.className = 'vkblock' + cls; block.style.flex = units + ' 1 0';
       rows.forEach(row => {
         const r = document.createElement('div'); r.className = 'vkrow';
