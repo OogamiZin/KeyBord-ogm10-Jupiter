@@ -104,8 +104,11 @@ progress { width: 100%; height: 12px; }
 .lside .lgroup { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; }
 .lside .lgroup > .gname { margin: 0 0 1px 2px; font-size: 13px; }
 .lside .lchip { width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body.pip .lwrap { grid-template-columns: 132px minmax(0, 1fr); gap: 8px; }
-body.pip .lside .lchip { padding: 1px 6px; }
+body.pip .lwrap { grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
+body.pip .lside { position: sticky; }
+body.pip .lside #dChips { flex-direction: column; flex-wrap: nowrap; gap: 5px; }
+body.pip .lside .lgroup { flex-direction: column; align-items: stretch; padding: 4px; gap: 3px; }
+body.pip .lside .lchip { width: 100%; padding: 1px 6px; }
 body.pip #dLayer { font-size: 16px; }
 body.pip { padding: 8px; }
 body.pip #dispBody { max-width: none; }
@@ -1440,8 +1443,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     uid: [0x36, 0xC9, 0x6B, 0xC8, 0xD0, 0xDA, 0xF4, 0x86], name: 'ogm10-Jupiter', matrix: { rows: 4, cols: 12 },
     /* レイヤーの用途（group が同じレイヤーは、ひとまとまりで表示する） */
     layerNames: [
-      { group: 'Windows', name: '基本' }, { group: 'Windows', name: '数字・記号' }, { group: 'Windows', name: '移動・機能' },
-      { group: 'Mac', name: '基本' }, { group: 'Mac', name: '数字・記号' }, { group: 'Mac', name: '移動・機能' },
+      { group: 'Win', name: '基本' }, { group: 'Win', name: '数字' }, { group: 'Win', name: '機能' },
+      { group: 'Mac', name: '基本' }, { group: 'Mac', name: '数字' }, { group: 'Mac', name: '機能' },
       { group: 'マクロ', name: '' }, { group: 'ユーザー', name: '' },
     ],
     customKeycodes: [
@@ -1604,7 +1607,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       b.addEventListener('click', () => chipClick(l));
       return b;
     });
-    E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は Windows / Mac の基本レイヤーの切り替え）'
+    E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は Win / Mac の基本レイヤーの切り替え）'
       : D.supported === false ? 'このファームウェアはレイヤー通知に未対応です。番号をクリックして表示を切り替えてください。'
       : D.pin !== null ? 'レイヤー ' + D.pin + ' を固定表示中（もう一度クリックすると追従に戻ります）'
       : 'キーボードのレイヤーに追従中（番号をクリックすると固定表示）';
