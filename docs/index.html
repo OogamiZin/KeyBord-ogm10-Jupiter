@@ -91,7 +91,13 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 /* キー割当のときだけ、仮想キーボードの上に「透過」「無効」の行を出す */
 #vkTop { display: none; gap: 3px; width: 740px; margin: 0 auto 3px; }
 body.vkkeys #vkTop { display: flex; }
-body.vkfix .barrow, body.vkfix .vkhead { display: none; }
+body.vkfix .vkhead, body.vkfix #toast { display: none; }
+#vk { position: relative; }
+#vkHideBtn { position: absolute; top: 0; right: 0; padding: 2px 10px; font-size: 12px; z-index: 1; }
+body.vkfix #vk:not([hidden]) ~ .barrow { display: none; }
+.barrow:empty { display: none; }
+#mVilBox { flex-basis: 100%; }
+#mVilBox select { max-width: 420px; }
 body.vkfix #vk { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
 #vkTop .vkey { flex: 0 0 auto; width: auto; padding: 0 8px; font-size: 11px; }
 .vkblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -322,7 +328,11 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <h2 id="edTitle">M0</h2>
       <span class="grow"></span>
       <span id="edSize" class="hint"></span>
+      <button id="mExport" title="選択中のマクロだけをファイルに保存します">個別エクスポート</button>
+      <button id="mImport" title="個別エクスポートしたファイル、または .vil の中のマクロを、選択中のマクロに読み込みます">個別インポート</button>
+      <input type="file" id="mFile" accept=".json,.vil,application/json" hidden>
       <button id="btnClear">このマクロを空にする</button>
+      <div id="mVilBox" class="group" hidden><span class="cap" id="mVilName"></span><select id="mVilSel"></select><button id="mVilUse" class="primary">選択中のマクロに取り込む</button><button id="mVilCancel">やめる</button></div>
     </div>
     <div class="row">
       <div class="group">
@@ -489,6 +499,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 
 <footer id="bar" hidden>
   <div id="vk">
+    <button type="button" id="vkHideBtn" title="仮想キーボードを隠します（画面下部の「仮想キーボードを出す」で戻せます）">隠す ✕</button>
     <div class="vkhead">
       <span class="cap">クリックしたキーを</span>
       <label><input type="radio" name="vkMode" value="tap" checked>1回押す</label>
@@ -507,11 +518,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
   </div>
   <div class="barrow">
   <span id="toast"></span>
-  <button id="btnVk">仮想キーボードを隠す</button>
-  <button id="btnExport">バックアップ保存</button>
-  <button id="btnImport">バックアップ読込</button>
-  <input type="file" id="fileImport" accept="application/json,.json" hidden>
-  <button id="btnReload">読み直す</button>
+  <button id="vkShowBtn" hidden>仮想キーボードを出す</button>
   </div>
 </footer>
 
@@ -1605,7 +1612,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     banner('このブラウザは WebHID に対応していないため、キーボードには接続できません。パソコンの Chrome か Edge で開いてください。「デモで試す」は使えます。');
   } else {
     navigator.hid.addEventListener('disconnect', e => {
-      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('usebar').hidden = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
+      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('usebar').hidden = true; dispWatch(); updateHeaderButtons(); }
     });
   }
 
@@ -1672,7 +1679,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; K.defaults = null; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
-    $('btnReload').disabled = false;
     const s = await v.unlockStatus();
     if (s.inProgress) await runUnlock();
     await load();
@@ -1922,8 +1928,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     /* 仮想キーボードは、マクロ編集ではフッター、キー割り当てでは編集欄の中に置く */
     const vk = $('vk');
     vkLatched.clear(); vkSync();
-    if (m === 'keys' || m === 'ext') { if (!K.vkFixed) K.vkHidden = vk.hidden; K.vkFixed = true; vk.hidden = false; }
-    else if (K.vkFixed) { K.vkFixed = false; vk.hidden = !!K.vkHidden; }
+
     if (m === 'disp') dispEnter(); else dispWatch();
     if (m === 'keys') keysEnter();
     if (m === 'ext') extEnter();
@@ -3066,11 +3071,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('vkHint').hidden = vkMode() !== 'tap';
   }));
   function vkShow(on) {
-    $('vk').hidden = !on;
-    $('btnVk').textContent = on ? '仮想キーボードを隠す' : '仮想キーボードを出す';
+    $('vk').hidden = !on; $('vkShowBtn').hidden = on;
+    if (!on) $('kSpecialMenu').hidden || keysMenu(false);
     try { localStorage.setItem('jupiter-vk', on ? '1' : '0'); } catch (e) { /* 保存できなくても動作に影響なし */ }
   }
-  $('btnVk').addEventListener('click', () => vkShow($('vk').hidden));
+  $('vkHideBtn').addEventListener('click', () => vkShow(false));
+  $('vkShowBtn').addEventListener('click', () => vkShow(true));
   try { if (localStorage.getItem('jupiter-vk') === '0') vkShow(false); } catch (e) { /* 既定の表示のまま */ }
   /* 固定フッターの高さぶん、本文の下に余白を取る */
   const fitFooter = () => { const h = ($('bar').offsetHeight + 16) + 'px'; $('app').style.paddingBottom = h; $('keys').style.paddingBottom = h; $('ext').style.paddingBottom = h; };
@@ -3114,34 +3120,63 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       return done(n ? '書き込みました' : '変更はありませんでした', true);
     } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
   }
-  $('btnReload').addEventListener('click', async () => {
-    if (dirty() && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
-    try { await load(); toast('読み直しました', true); } catch (e) { toast('読み込みに失敗: ' + e.message, false); }
-  });
   const dirty = () => st.macros.some((s, i) => s !== st.orig[i]);
 
-  $('btnExport').addEventListener('click', () => {
-    const data = { format: 'jupiter-macro', version: 1, macros: st.macros };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'jupiter-macros.json'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  /* ---- マクロの個別エクスポート・インポート ---- */
+  $('mExport').addEventListener('click', () => {
+    const src = st.macros[st.sel] || '';
+    if (C.compile(src).errors.length) { toast('M' + st.sel + ' にエラーがあるため、エクスポートできません', false); return; }
+    const data = { format: 'ogm10-jupiter-macro', version: 1, name: 'M' + st.sel, text: src, vial: textToVilMacro(src) };
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'ogm10-jupiter-M' + st.sel + '-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + '.json';
+    a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('M' + st.sel + ' をエクスポートしました', true);
   });
-  $('btnImport').addEventListener('click', () => $('fileImport').click());
-  $('fileImport').addEventListener('change', async e => {
+  const mVil = { macros: null };
+  function macroSetCurrent(text, from) {
+    if (st.macros[st.sel] && st.macros[st.sel] !== text && !confirm('M' + st.sel + ' の今の内容を、' + from + ' で置き換えますか？')) return;
+    st.macros[st.sel] = text; ta.value = text; refresh();
+    toast(from + ' を M' + st.sel + ' に読み込みました。「書込」で反映されます', true);
+  }
+  $('mImport').addEventListener('click', () => $('mFile').click());
+  $('mFile').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f) return;
     try {
       const data = JSON.parse(await f.text());
-      if (data.format !== 'jupiter-macro' || !Array.isArray(data.macros)) throw new Error('このツールのバックアップではありません');
-      const n = st.macros.length;
-      st.macros = data.macros.slice(0, n).map(s => String(s));
-      while (st.macros.length < n) st.macros.push('');
-      ta.value = st.macros[st.sel]; refresh();
-      toast('読み込みました。「キーボードに書き込む」で反映されます', true);
+      const cu = D.def ? D.def.custom : [];
+      if (data && data.format === 'ogm10-jupiter-macro') {
+        $('mVilBox').hidden = true;
+        macroSetCurrent(typeof data.text === 'string' ? data.text : vilMacroToText(data.vial, cu), (data.name || 'マクロ') + '（' + f.name + '）');
+        return;
+      }
+      if (!data || !Array.isArray(data.macro)) throw new Error('個別エクスポートのファイルでも、マクロを含む .vil でもありません');
+      mVil.macros = data.macro.map(m => { try { return vilMacroToText(m, cu); } catch (err) { return null; } });
+      const sel = $('mVilSel'); sel.textContent = '';
+      mVil.macros.forEach((t, i) => {
+        const o = document.createElement('option'); o.value = i;
+        const flat = t === null ? '（読み込めません）' : (t.replace(/\s+/g, ' ') || '（空）');
+        o.textContent = 'M' + i + ': ' + (flat.length > 60 ? flat.slice(0, 60) + '…' : flat);
+        o.disabled = t === null; sel.appendChild(o);
+      });
+      const first = mVil.macros.findIndex(t => t);
+      sel.value = String(first >= 0 ? first : 0);
+      $('mVilName').textContent = f.name + ' の';
+      $('mVilBox').hidden = false;
+      toast('取り込むマクロを選んでください', true);
     } catch (err) { toast('読み込めませんでした: ' + err.message, false); }
   });
+  $('mVilUse').addEventListener('click', () => {
+    const i = Number($('mVilSel').value), t = mVil.macros && mVil.macros[i];
+    if (t === null || t === undefined) return;
+    macroSetCurrent(t, '.vil の M' + i);
+    $('mVilBox').hidden = true; mVil.macros = null;
+  });
+  $('mVilCancel').addEventListener('click', () => { $('mVilBox').hidden = true; mVil.macros = null; toast('', true); });
 
-  window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length || dynChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
   $('btnConnect').addEventListener('click', () => (st.vial ? endSession() : connect()));
   $('btnDemo').addEventListener('click', startDemo);
 })();
