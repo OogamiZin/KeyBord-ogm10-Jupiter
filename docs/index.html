@@ -259,7 +259,9 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 #tip { position: fixed; z-index: 60; max-width: min(400px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.55; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); pointer-events: none; overflow-wrap: anywhere; }
 #tip strong { display: block; font-family: var(--mono); margin-bottom: 2px; }
 #tip div { white-space: pre-line; }
-#legend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
+#legendBox { margin: 12px 0 0; font-size: 13px; }
+#legendBox > summary { cursor: pointer; color: var(--sub); }
+#legend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; margin: 8px 0 0; font-size: 13px; line-height: 1.5; }
 #legend dt { font-family: var(--mono); font-weight: 650; padding: 0 8px; border-radius: 5px; background: var(--chip-key); align-self: start; white-space: nowrap; }
 #legend dd { margin: 0; }
 #legend dd { overflow-wrap: anywhere; }
@@ -282,8 +284,8 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
   <nav id="modes" hidden>
     <button id="tabMacro" class="on">マクロ</button>
     <button id="tabKeys">キー割当</button>
-    <button id="tabDisp">レイヤ監視</button>
     <button id="tabExt">拡張</button>
+    <button id="tabDisp">レイヤ監視</button>
   </nav>
   <div class="conn">
     <div id="devbox">
@@ -472,7 +474,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
           <button id="btnKeymap" class="nopip">割り当てを読み直す</button>
         </div>
         <div id="board" class="board"></div>
-        <dl id="legend" hidden></dl>
+        <details id="legendBox" hidden><summary>専用キー・マクロの説明</summary><dl id="legend"></dl></details>
         <div id="dTrig" class="trigview" hidden></div>
     <p id="dHint" class="hint nopip">キーの左上の青い文字は、Shift を押しながら打つと出る文字です（JIS 配列）。薄い表示は、下のレイヤーの割り当てがそのまま効いているキーです。丸いキーはエンコーダーの回転（↺ 反時計回り、↻ 時計回り）です。</p>
       </div>
@@ -1752,7 +1754,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   const isJupiter = () => !!st.vial && JUPITER.uid.every((b, i) => st.vial.uid[i] === b);
   const D = { trig: false, def: null, defNote: '', keymap: null, enc: null, layers: 0, state: null, supported: null, pin: null, timer: null, busy: false, pip: null, mode: 'macro' };
   /* 小窓に移しても参照できるよう、表示用の要素は最初に取っておく */
-  const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), trig: $('dTrig'), hint: $('dHint'), pip: $('btnPip'), reload: $('btnKeymap') };
+  const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), legendBox: $('legendBox'), trig: $('dTrig'), hint: $('dHint'), pip: $('btnPip'), reload: $('btnKeymap') };
 
   /* レイヤーの用途名。キーボードの定義にあればそれを、なければ Jupiter 用の内蔵の名前を使う */
   function layerInfo(l) {
@@ -1835,8 +1837,11 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
             g.setAttribute('aria-expanded', String(!folded));
             g.addEventListener('click', () => toggleGroup(info.group));
             wrap.appendChild(g);
-          } else {
+          } else if (info.name) {
             const g = doc.createElement('span'); g.className = 'gname'; g.textContent = info.group; wrap.appendChild(g);
+          } else {
+            /* 1 レイヤーだけのまとまり（マクロ・ユーザー）は、番号の横に名前を出して 1 行にする */
+            const n = doc.createElement('span'); n.className = 'lname'; n.textContent = info.group; b.appendChild(n);
           }
           box.appendChild(wrap);
         }
@@ -1993,7 +1998,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     addTrigChip(E.chips, doc, D.trig, () => { D.trig = !D.trig; dispRender(); });
     E.trig.hidden = !D.trig; E.board.hidden = !!D.trig; E.hint.hidden = !!D.trig;
     if (D.trig) {
-      E.legend.hidden = true; tipHide(doc);
+      E.legendBox.hidden = true; tipHide(doc);
       E.status.textContent = '独自トリガの一覧（レイヤー番号を押すと盤面の表示に戻ります）';
       renderTrig(E.trig, doc);
       return;
@@ -2034,7 +2039,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       const dd = doc.createElement('dd'); dd.textContent = lab.desc;
       E.legend.append(dt, dd);
     }
-    E.legend.hidden = !rows.length;
+    E.legendBox.hidden = !rows.length;
   }
   function chipClick(l) {
     if (D.trig) { D.trig = false; if (!(st.demo && st.mock)) { dispRender(); return; } }
