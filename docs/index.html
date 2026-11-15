@@ -327,7 +327,6 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <span class="kacts">
       <button id="kDefault" title="全レイヤーのキー割当とエンコーダーを、ファームウェア（keymap.c）の初期設定に戻します">初期設定に戻す</button>
       <button id="kReload" title="キー割当の書き込んでいない変更を捨てて、キーボードの今の割り当てに戻します">変更破棄</button>
-      <button id="kSave" class="wbtn" title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
       </span>
     </div>
     <div id="kTrig" class="trigview" hidden></div>
@@ -2181,7 +2180,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
     finally { keysRender(); keysShowSel(); }
   }
-  $('kSave').addEventListener('click', () => writeAll());
 
   /* ---- 画面上部の「書き込み」: マクロとキー割当の変更をまとめて書き込む ---- */
   function pendingCount() {
@@ -2191,7 +2189,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function updateWriteBtn() {
     const b = $('btnWrite'); if (!b) return;
     const p = pendingCount(), n = p.macros + p.keys;
-    for (const x of [b, $('kSave')]) { x.textContent = n ? '書込（' + n + ' 件）' : '書込'; x.classList.toggle('pending', n > 0); }
+    b.textContent = n ? '書込（' + n + ' 件）' : '書込'; b.classList.toggle('pending', n > 0);
     if (n && !b.disabled && !$('hdrMsg').dataset.keep) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
   }
   /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
@@ -2236,7 +2234,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   async function writeAll() {
     if (!st.vial) return;
-    const b = $('btnWrite'); b.disabled = true; $('kSave').disabled = true; hdrMsg('書き込み中…', true);
+    const b = $('btnWrite'); b.disabled = true; hdrMsg('書き込み中…', true);
     const parts = []; let ok = true;
     try {
       const p = pendingCount();
@@ -2244,7 +2242,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       if (p.keys) { const r = await keysSave(); parts.push('キー割当: ' + r.msg); ok = ok && r.ok; }
       if (!parts.length) parts.push('変更はありません');
     } catch (e) { parts.push('書き込みに失敗: ' + e.message); ok = false; }
-    finally { b.disabled = false; $('kSave').disabled = false; }
+    finally { b.disabled = false; }
     hdrMsg(parts.join(' ／ '), ok); updateWriteBtn();
   }
   $('btnWrite').addEventListener('click', writeAll);
