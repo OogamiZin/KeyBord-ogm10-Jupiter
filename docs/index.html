@@ -26,7 +26,12 @@ h1 { font-size: 16px; margin: 0; font-weight: 650; }
 h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
 h2 { font-size: 14px; margin: 0; }
 .conn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
-#status { color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+#devbox { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 150px; }
+#devName { font-size: 12px; font-weight: 650; line-height: 1.2; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#status { color: var(--sub); font-size: 12px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+#usebar { width: 150px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+#usebar > div { height: 100%; width: 0; background: var(--accent); }
+#usebar.over > div { background: var(--warn); }
 #status.over { color: var(--warn); font-weight: 600; }
 #btnWrite.pending { background: var(--dirty); border-color: var(--dirty); color: #000; font-weight: 700; }
 #hdrMsg { font-size: 13px; max-width: 420px; }
@@ -205,18 +210,21 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 </head>
 <body>
 <header>
-  <h1>ogm10-Jupiter設定</h1>
   <nav id="modes" hidden>
     <button id="tabMacro" class="on">マクロ</button>
     <button id="tabKeys">キー割当</button>
-    <button id="tabDisp">レイヤー監視</button>
+    <button id="tabDisp">レイヤ監視</button>
   </nav>
   <div class="conn">
-    <span id="status">未接続</span>
+    <div id="devbox">
+      <div id="devName" hidden></div>
+      <div id="status">未接続</div>
+      <div id="usebar" hidden><div></div></div>
+    </div>
     <span id="hdrMsg" hidden></span>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
-    <button id="btnWrite" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書き込み</button>
+    <button id="btnWrite" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
   </div>
 </header>
 <div id="banner" hidden></div>
@@ -1374,7 +1382,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     banner('このブラウザは WebHID に対応していないため、キーボードには接続できません。パソコンの Chrome か Edge で開いてください。「デモで試す」は使えます。');
   } else {
     navigator.hid.addEventListener('disconnect', e => {
-      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
+      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('usebar').hidden = true; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
     });
   }
 
@@ -1431,8 +1439,10 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const v = new C.Vial(transport);
     try { await v.init(); } catch (e) { banner('接続できませんでした: ' + e.message); return; }
     st.vial = v;
+    $('devName').textContent = name; $('devName').hidden = false;
+    $('devName').title = name + '（マクロ ' + v.macroCount + ' 個）';
     $('status').textContent = '- / ' + v.bufSize + ' Byte';
-    $('status').title = name + '（マクロ ' + v.macroCount + ' 個）';
+    $('usebar').hidden = false;
     $('intro').hidden = true; $('modes').hidden = false;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
@@ -2024,7 +2034,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function updateWriteBtn() {
     const b = $('btnWrite'); if (!b) return;
     const p = pendingCount(), n = p.macros + p.keys;
-    b.textContent = n ? '書き込み（' + n + ' 件）' : '書き込み';
+    b.textContent = n ? '書込（' + n + ' 件）' : '書込';
     b.classList.toggle('pending', n > 0);
     if (n && !b.disabled) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
   }
@@ -2127,7 +2137,10 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     m.querySelector('.fill').style.width = Math.min(100, used / v.bufSize * 100) + '%';
     m.querySelector('.txt').textContent = '使用量 ' + used + ' / ' + v.bufSize + ' バイト' + (used > v.bufSize ? '（超過しています）' : '');
     /* 画面上部: マクロの保存領域の使用量 */
-    $('status').textContent = used + ' / ' + v.bufSize + ' Byte (' + Math.round(used / v.bufSize * 100) + '%)';
+    $('status').textContent = used + ' / ' + v.bufSize + ' Byte';
+    $('usebar').firstChild.style.width = Math.min(100, used / v.bufSize * 100) + '%';
+    $('usebar').classList.toggle('over', used > v.bufSize);
+    $('usebar').title = '使用量 ' + Math.round(used / v.bufSize * 100) + '%';
     updateWriteBtn();
     $('status').classList.toggle('over', used > v.bufSize);
     return { comp, used };
