@@ -349,12 +349,12 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
         <button id="kKeyDefault" title="このキーだけ、ファームウェア（keymap.c）の初期設定の割り当てに戻します">初期設定</button>
       </div>
       <div class="row">
-        <div class="group"><span class="cap">長押でレイヤー</span><select id="kLtLayer"></select><button id="kLt">追加設定</button></div>
+        <div class="group"><span class="cap">長押でレイヤー</span><select id="kLtLayer"></select><button id="kLt">追加</button></div>
         <div class="group"><span class="cap">長押で修飾</span>
           <label><input type="checkbox" id="kmCtl">Ctrl</label><label><input type="checkbox" id="kmSft">Shift</label>
           <label><input type="checkbox" id="kmAlt">Alt</label><label><input type="checkbox" id="kmGui">GUI</label>
-          <button id="kMt">追加設定</button></div>
-        <button id="kPlain" title="長押の設定を外して、タップ側のキーだけにする">長押を外す</button>
+          <button id="kMt">追加</button></div>
+        <div class="group"><button id="kPlain" title="長押の設定を外して、タップ側のキーだけにする">長押解除</button></div>
       </div>
       <div class="row">
         <div class="group"><span class="cap">レイヤー操作</span><select id="kOp">
@@ -2121,7 +2121,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const kc = kVal(K.layer, kKeys()[K.sel]);
     if (kc < 0x100) return kc;
     if (kc >= 0x2000 && kc < 0x5000) return kc & 0xFF;
-    kToast('長押は、単独のキーにだけ追加設定できます（今の割り当て: ' + C.keycodeToText(kc, D.def.custom) + '）', false);
+    kToast('長押は、単独のキーにだけ追加できます（今の割り当て: ' + C.keycodeToText(kc, D.def.custom) + '）', false);
     return null;
   }
   $('kLt').addEventListener('click', () => { const tap = keysTapPart(); if (tap !== null) keysAssign(0x4000 | (Number($('kLtLayer').value) << 8) | tap, true); });
