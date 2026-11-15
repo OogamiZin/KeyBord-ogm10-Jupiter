@@ -28,6 +28,9 @@ h2 { font-size: 14px; margin: 0; }
 .conn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
 #status { color: var(--sub); font-size: 13px; font-variant-numeric: tabular-nums; }
 #status.over { color: var(--warn); font-weight: 600; }
+#btnWrite.pending { background: var(--dirty); border-color: var(--dirty); color: #000; font-weight: 700; }
+#hdrMsg { font-size: 13px; max-width: 420px; }
+#hdrMsg.ok { color: var(--ok); } #hdrMsg.ng { color: var(--warn); }
 button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .5; cursor: default; }
@@ -210,8 +213,10 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
   </nav>
   <div class="conn">
     <span id="status">未接続</span>
+    <span id="hdrMsg" hidden></span>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
+    <button id="btnWrite" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書き込み</button>
   </div>
 </header>
 <div id="banner" hidden></div>
@@ -1369,7 +1374,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     banner('このブラウザは WebHID に対応していないため、キーボードには接続できません。パソコンの Chrome か Edge で開いてください。「デモで試す」は使えます。');
   } else {
     navigator.hid.addEventListener('disconnect', e => {
-      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); }
+      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
     });
   }
 
@@ -1426,9 +1431,10 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const v = new C.Vial(transport);
     try { await v.init(); } catch (e) { banner('接続できませんでした: ' + e.message); return; }
     st.vial = v;
-    $('status').textContent = '-/' + v.bufSize + 'Byte';
+    $('status').textContent = '- / ' + v.bufSize + ' Byte';
     $('status').title = name + '（マクロ ' + v.macroCount + ' 個）';
     $('intro').hidden = true; $('modes').hidden = false;
+    updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false;
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
@@ -1866,6 +1872,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const cur = layerInfo(K.layer);
     $('kboard').style.borderTopColor = cur && cur.gi >= 0 ? getComputedStyle($('kTabs').querySelector('.lgroup.act')).borderLeftColor : 'transparent';
     $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
+    updateWriteBtn();
     const board = $('kboard');
     board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
     board.textContent = ''; tipHide(document);
@@ -1991,22 +1998,63 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     } catch (err) { kToast(err.message, false); }
   });
   async function keysSave() {
-    const v = st.vial; if (!v || !K.edit) return;
+    const v = st.vial; if (!v || !K.edit) return { ok: true, msg: '変更はありません' };
+    const done = (msg, ok) => { kToast(msg, ok); return { ok, msg }; };
     const ch = keysChanges();
-    if (!ch.length) { kToast('変更はありません', true); return; }
+    if (!ch.length) return done('変更はありません', true);
     $('kSave').disabled = true;
     try {
       /* エンコーダーへのブートローダー割り当てだけは、ロック中だとファームに拒否される */
-      if (ch.some(c => c.enc !== undefined && c.kc === 0x7C00) && !(await runUnlock())) { kToast('ロックを解除できませんでした', false); return; }
+      if (ch.some(c => c.enc !== undefined && c.kc === 0x7C00) && !(await runUnlock())) return done('ロックを解除できませんでした', false);
       for (const c of ch) { if (c.enc !== undefined) await v.setEncoder(c.layer, c.enc, c.dir, c.kc); else await v.setKeycode(c.layer, c.row, c.col, c.kc); }
       D.keymap = await v.readKeymap(D.layers, D.def.rows, D.def.cols);
       D.enc = await v.readEncoders(D.layers, D.def.encoders);
       const left = keysChanges().length;
-      if (left) kToast(left + ' 件が書き込めていません（読み戻した内容と一致しません）', false); else kToast(ch.length + ' 件を書き込みました', true);
-    } catch (e) { kToast('書き込みに失敗: ' + e.message, false); }
+      return left ? done(left + ' 件が書き込めていません（読み戻した内容と一致しません）', false) : done(ch.length + ' 件を書き込みました', true);
+    } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
     finally { $('kSave').disabled = false; keysRender(); keysShowSel(); }
   }
-  $('kSave').addEventListener('click', keysSave);
+  $('kSave').addEventListener('click', () => keysSave());
+
+  /* ---- 画面上部の「書き込み」: マクロとキー割当の変更をまとめて書き込む ---- */
+  function pendingCount() {
+    const macros = st.vial ? st.macros.filter((x, i) => x !== st.orig[i]).length : 0;
+    return { macros, keys: keysChanges().length };
+  }
+  function updateWriteBtn() {
+    const b = $('btnWrite'); if (!b) return;
+    const p = pendingCount(), n = p.macros + p.keys;
+    b.textContent = n ? '書き込み（' + n + ' 件）' : '書き込み';
+    b.classList.toggle('pending', n > 0);
+    if (n && !b.disabled) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
+  }
+  /* 実機につないでいる間は「デモで試す」の代わりに「書き込み」を出す */
+  function updateHeaderButtons() {
+    const real = !!st.vial && !st.demo;
+    $('btnDemo').hidden = real; $('btnWrite').hidden = !real;
+    if (!real) $('hdrMsg').hidden = true;
+    updateWriteBtn();
+  }
+  let hdrTimer = null;
+  function hdrMsg(msg, ok) {
+    const m = $('hdrMsg'); m.textContent = msg; m.className = ok ? 'ok' : 'ng'; m.hidden = !msg;
+    clearTimeout(hdrTimer);
+    if (msg && ok) hdrTimer = setTimeout(() => { m.hidden = true; }, 6000);
+  }
+  async function writeAll() {
+    if (!st.vial) return;
+    const b = $('btnWrite'); b.disabled = true; hdrMsg('書き込み中…', true);
+    const parts = []; let ok = true;
+    try {
+      const p = pendingCount();
+      if (p.macros) { const r = await save(); parts.push('マクロ: ' + r.msg); ok = ok && r.ok; }
+      if (p.keys) { const r = await keysSave(); parts.push('キー割当: ' + r.msg); ok = ok && r.ok; }
+      if (!parts.length) parts.push('変更はありません');
+    } catch (e) { parts.push('書き込みに失敗: ' + e.message); ok = false; }
+    finally { b.disabled = false; }
+    hdrMsg(parts.join(' ／ '), ok); updateWriteBtn();
+  }
+  $('btnWrite').addEventListener('click', writeAll);
   $('kReload').addEventListener('click', async () => {
     if (keysChanges().length && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
     try { await dispLoadKeymap(); K.edit = clone(D.keymap); K.encEdit = clone(D.enc); keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); kToast('読み直しました', true); }
@@ -2079,7 +2127,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     m.querySelector('.fill').style.width = Math.min(100, used / v.bufSize * 100) + '%';
     m.querySelector('.txt').textContent = '使用量 ' + used + ' / ' + v.bufSize + ' バイト' + (used > v.bufSize ? '（超過しています）' : '');
     /* 画面上部: マクロの保存領域の使用量 */
-    $('status').textContent = used + '/' + v.bufSize + 'Byte(' + Math.round(used / v.bufSize * 100) + '%)';
+    $('status').textContent = used + ' / ' + v.bufSize + ' Byte (' + Math.round(used / v.bufSize * 100) + '%)';
+    updateWriteBtn();
     $('status').classList.toggle('over', used > v.bufSize);
     return { comp, used };
   }
@@ -2309,22 +2358,23 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
 
   async function save() {
-    const v = st.vial; if (!v) return;
+    const v = st.vial; if (!v) return { ok: false, msg: '未接続です' };
+    const done = (msg, ok) => { toast(msg, ok); return { ok, msg }; };
     const r = refresh();
     const bad = r.comp.findIndex(c => c.errors.length);
-    if (bad >= 0) { toast('M' + bad + ' にエラーがあります', false); return; }
-    if (r.used > v.bufSize) { toast('保存領域を ' + (r.used - v.bufSize) + ' バイト超えています', false); return; }
+    if (bad >= 0) return done('M' + bad + ' にエラーがあります', false);
+    if (r.used > v.bufSize) return done('保存領域を ' + (r.used - v.bufSize) + ' バイト超えています', false);
     $('btnSave').disabled = true;
     try {
-      if (!(await runUnlock())) { toast('ロックを解除できませんでした', false); return; }
+      if (!(await runUnlock())) return done('ロックを解除できませんでした', false);
       const n = await v.writeMacros(C.joinMacros(r.comp.map(c => c.bytes)));
       layoutSave();
       await load();
-      toast(n ? '書き込みました' : '変更はありませんでした', true);
-    } catch (e) { toast('書き込みに失敗: ' + e.message, false); }
+      return done(n ? '書き込みました' : '変更はありませんでした', true);
+    } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
     finally { $('btnSave').disabled = !st.vial; }
   }
-  $('btnSave').addEventListener('click', save);
+  $('btnSave').addEventListener('click', () => save());
   $('btnReload').addEventListener('click', async () => {
     if (dirty() && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
     try { await load(); toast('読み直しました', true); } catch (e) { toast('読み込みに失敗: ' + e.message, false); }
