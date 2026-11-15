@@ -2617,7 +2617,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     ['PSCR', 'SCRL', 'PAUS'], ['INS', 'HOME', 'PGUP'], ['DEL', 'END', 'PGDN'], [3], [1, 'UP', 1], ['LEFT', 'DOWN', 'RIGHT'],
   ];
   const VK_NUM = [
-    [4], ['NUM', 'PSLS', 'PAST', 'PMNS'], ['P7', 'P8', 'P9', 'PPLS'], ['P4', 'P5', 'P6', 1], ['P1', 'P2', 'P3', 'PENT'], [['P0', 2], 'PDOT', 1],
+    ['NUM', 'PPLS', 'PENT'], ['PSLS', 'PAST', 'PMNS'], ['P7', 'P8', 'P9'], ['P4', 'P5', 'P6'], ['P1', 'P2', 'P3'], [['P0', 2], 'PDOT'],
   ];
   const VK_EXTRA = [
     ['MUTE', 'VOLD', 'VOLU'], ['MPRV', 'MPLY', 'MNXT'], ['BRID', 'BRIU', 'CALC'], ['LNG2', 'LNG1', 1], ['F13', 'F14', 'F15'], ['PWR', 'SLEP', 1],
@@ -2642,7 +2642,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   function vkBuild() {
     const root = $('vkKeys');
-    [[VK_MAIN, 15, ''], [VK_NAV, 3, ''], [VK_NUM, 4, ' vknum'], [VK_EXTRA, 3, ' vkextra']].forEach(([rows, units, cls]) => {
+    [[VK_MAIN, 15, ''], [VK_NAV, 3, ''], [VK_NUM, 3, ' vknum'], [VK_EXTRA, 3, ' vkextra']].forEach(([rows, units, cls]) => {
       const block = document.createElement('div'); block.className = 'vkblock' + cls; block.style.flex = units + ' 1 0';
       rows.forEach(row => {
         const r = document.createElement('div'); r.className = 'vkrow';
