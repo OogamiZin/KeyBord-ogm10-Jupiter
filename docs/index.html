@@ -33,7 +33,7 @@ h2 { font-size: 14px; margin: 0; }
 #usebar > div { height: 100%; width: 0; background: var(--accent); }
 #usebar.over > div { background: var(--warn); }
 #status.over { color: var(--warn); font-weight: 600; }
-#btnWrite.pending { background: var(--dirty); border-color: var(--dirty); color: #000; font-weight: 700; }
+.wbtn.pending { background: var(--dirty); border-color: var(--dirty); color: #000; font-weight: 700; }
 #hdrMsg { font-size: 13px; max-width: 420px; }
 #hdrMsg.ok { color: var(--ok); } #hdrMsg.ng { color: var(--warn); }
 button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
@@ -231,7 +231,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <span id="hdrMsg" hidden></span>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
-    <button id="btnWrite" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
+    <button id="btnWrite" class="wbtn" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
   </div>
 </header>
 <div id="banner" hidden></div>
@@ -312,8 +312,8 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <span id="kStatus" class="hint"></span>
       <span class="grow"></span>
       <span id="kToast"></span>
-      <button id="kReload">読み直す</button>
-      <button id="kSave" class="primary">キーボードに書き込む</button>
+      <button id="kReload" title="キー割当の書き込んでいない変更を捨てて、キーボードの今の割り当てに戻します">変更破棄</button>
+      <button id="kSave" class="wbtn" title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
     </div>
     <div id="kTrig" class="trigview" hidden></div>
     <div id="kboard" class="board"></div>
@@ -1949,14 +1949,14 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     addTrigChip($('kTabs'), document, K.trig, () => { K.trig = !K.trig; if (st.capturing) setCapture(false); keysRender(); keysShowSel(); });
     $('kTrig').hidden = !K.trig; $('kboard').hidden = !!K.trig; $('kedit').hidden = !!K.trig;
     if (K.trig) {
-      $('kStatus').textContent = (changes.length ? '未保存の変更 ' + changes.length + ' 件 ／ ' : '') + '独自トリガの一覧（レイヤー番号を押すと編集に戻ります）';
+      $('kStatus').textContent = '独自トリガの一覧（レイヤー番号を押すと編集に戻ります）';
       tipHide(document); renderTrig($('kTrig'), document);
       return;
     }
     $('kTrig').textContent = '';
     const cur = layerInfo(K.layer);
     $('kboard').style.borderTopColor = cur && cur.gi >= 0 ? getComputedStyle($('kTabs').querySelector('.lgroup.act')).borderLeftColor : 'transparent';
-    $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
+    $('kStatus').textContent = '';
     updateWriteBtn();
     const board = $('kboard');
     board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
@@ -2087,7 +2087,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const done = (msg, ok) => { kToast(msg, ok); return { ok, msg }; };
     const ch = keysChanges();
     if (!ch.length) return done('変更はありません', true);
-    $('kSave').disabled = true;
     try {
       /* エンコーダーへのブートローダー割り当てだけは、ロック中だとファームに拒否される */
       if (ch.some(c => c.enc !== undefined && c.kc === 0x7C00) && !(await runUnlock())) return done('ロックを解除できませんでした', false);
@@ -2097,9 +2096,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       const left = keysChanges().length;
       return left ? done(left + ' 件が書き込めていません（読み戻した内容と一致しません）', false) : done(ch.length + ' 件を書き込みました', true);
     } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
-    finally { $('kSave').disabled = false; keysRender(); keysShowSel(); }
+    finally { keysRender(); keysShowSel(); }
   }
-  $('kSave').addEventListener('click', () => keysSave());
+  $('kSave').addEventListener('click', () => writeAll());
 
   /* ---- 画面上部の「書き込み」: マクロとキー割当の変更をまとめて書き込む ---- */
   function pendingCount() {
@@ -2109,8 +2108,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function updateWriteBtn() {
     const b = $('btnWrite'); if (!b) return;
     const p = pendingCount(), n = p.macros + p.keys;
-    b.textContent = n ? '書込（' + n + ' 件）' : '書込';
-    b.classList.toggle('pending', n > 0);
+    for (const x of [b, $('kSave')]) { x.textContent = n ? '書込（' + n + ' 件）' : '書込'; x.classList.toggle('pending', n > 0); }
     if (n && !b.disabled) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
   }
   /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
@@ -2118,7 +2116,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const on = !!st.vial;
     $('btnDemo').hidden = on; $('btnWrite').hidden = !on;
     const c = $('btnConnect');
-    c.textContent = on ? '解除' : 'キーボードに接続';
+    c.textContent = on ? '接続解除' : 'キーボードに接続';
     c.classList.toggle('primary', !on);
     c.title = on ? (st.demo ? 'デモを終えて最初の画面に戻ります' : 'キーボードとの接続を切って最初の画面に戻ります') : '';
     if (!on) $('hdrMsg').hidden = true;
@@ -2155,7 +2153,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   async function writeAll() {
     if (!st.vial) return;
-    const b = $('btnWrite'); b.disabled = true; hdrMsg('書き込み中…', true);
+    const b = $('btnWrite'); b.disabled = true; $('kSave').disabled = true; hdrMsg('書き込み中…', true);
     const parts = []; let ok = true;
     try {
       const p = pendingCount();
@@ -2163,13 +2161,14 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       if (p.keys) { const r = await keysSave(); parts.push('キー割当: ' + r.msg); ok = ok && r.ok; }
       if (!parts.length) parts.push('変更はありません');
     } catch (e) { parts.push('書き込みに失敗: ' + e.message); ok = false; }
-    finally { b.disabled = false; }
+    finally { b.disabled = false; $('kSave').disabled = false; }
     hdrMsg(parts.join(' ／ '), ok); updateWriteBtn();
   }
   $('btnWrite').addEventListener('click', writeAll);
   $('kReload').addEventListener('click', async () => {
-    if (keysChanges().length && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
-    try { await dispLoadKeymap(); K.edit = clone(D.keymap); K.encEdit = clone(D.enc); keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); kToast('読み直しました', true); }
+    const n = keysChanges().length;
+    if (n && !confirm('キー割当の書き込んでいない変更 ' + n + ' 件を破棄しますか？')) return;
+    try { await dispLoadKeymap(); K.edit = clone(D.keymap); K.encEdit = clone(D.enc); keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); kToast('', true); }
     catch (e) { kToast('読み込みに失敗: ' + e.message, false); }
   });
 
