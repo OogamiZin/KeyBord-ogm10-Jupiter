@@ -90,7 +90,9 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 #vkKeys { display: flex; gap: 10px; width: 740px; margin: 0 auto; }
 /* キー割当のときだけ、仮想キーボードの上に「透過」「無効」の行を出す */
 #vkTop { display: none; gap: 3px; width: 740px; margin: 0 auto 3px; }
-#kvk #vkTop { display: flex; }
+body.vkkeys #vkTop { display: flex; }
+body.vkfix .barrow, body.vkfix .vkhead { display: none; }
+body.vkfix #vk { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
 #vkTop .vkey { flex: 0 0 auto; width: auto; padding: 0 8px; font-size: 11px; }
 .vkblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .vkrow { display: flex; gap: 3px; height: 28px; }
@@ -1910,7 +1912,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (st.capturing) setCapture(false);
     D.mode = m;
     $('tabMacro').classList.toggle('on', m === 'macro'); $('tabKeys').classList.toggle('on', m === 'keys'); $('tabDisp').classList.toggle('on', m === 'disp'); $('tabExt').classList.toggle('on', m === 'ext');
-    $('app').hidden = m !== 'macro'; $('bar').hidden = m !== 'macro'; $('keys').hidden = m !== 'keys'; $('disp').hidden = m !== 'disp'; $('ext').hidden = m !== 'ext';
+    $('app').hidden = m !== 'macro'; $('bar').hidden = !['macro', 'keys', 'ext'].includes(m);
+    /* キー割当・拡張でも、仮想キーボードは画面下部に固定する（マクロ用のボタン類は隠す） */
+    document.body.classList.toggle('vkfix', m === 'keys' || m === 'ext'); document.body.classList.toggle('vkkeys', m === 'keys'); $('keys').hidden = m !== 'keys'; $('disp').hidden = m !== 'disp'; $('ext').hidden = m !== 'ext';
     /* 「一覧から選ぶ」のメニューは、キー割当と拡張で共有する */
     if (!$('kSpecialMenu').hidden) keysMenu(false);
     if (m === 'ext') $('xSpecialWrap').appendChild($('kSpecialMenu')); else if (m === 'keys') $('kSpecialBtn').parentNode.appendChild($('kSpecialMenu')); else if (m === 'macro') $('mSpecialWrap').appendChild($('kSpecialMenu'));
@@ -1918,9 +1922,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     /* 仮想キーボードは、マクロ編集ではフッター、キー割り当てでは編集欄の中に置く */
     const vk = $('vk');
     vkLatched.clear(); vkSync();
-    const host = m === 'keys' ? $('kvk') : m === 'ext' ? $('xvk') : null;
-    if (host) { if (vk.parentNode === $('bar')) K.vkHidden = vk.hidden; host.appendChild(vk); vk.hidden = false; }
-    else if (vk.parentNode !== $('bar')) { $('bar').insertBefore(vk, $('bar').firstChild); vk.hidden = !!K.vkHidden; }
+    if (m === 'keys' || m === 'ext') { if (!K.vkFixed) K.vkHidden = vk.hidden; K.vkFixed = true; vk.hidden = false; }
+    else if (K.vkFixed) { K.vkFixed = false; vk.hidden = !!K.vkHidden; }
     if (m === 'disp') dispEnter(); else dispWatch();
     if (m === 'keys') keysEnter();
     if (m === 'ext') extEnter();
@@ -2274,7 +2277,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (!open) return;
     /* 下に入りきらないときは上に開く */
     const r = $(D.mode === 'ext' ? 'xSpecialBtn' : D.mode === 'macro' ? 'mSpecialBtn' : 'kSpecialBtn').getBoundingClientRect();
-    menu.classList.toggle('up', r.bottom + 350 > window.innerHeight && r.top > 350);
+    const limit = $('bar').hidden ? window.innerHeight : $('bar').getBoundingClientRect().top;  /* 下部の仮想キーボードに隠れないように */
+    menu.classList.toggle('up', r.bottom + 350 > limit && r.top > 350);
     menu.scrollTop = 0;
   }
   $('kSpecialBtn').addEventListener('click', e => { e.stopPropagation(); keysMenu($('kSpecialMenu').hidden); });
@@ -3069,7 +3073,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   $('btnVk').addEventListener('click', () => vkShow($('vk').hidden));
   try { if (localStorage.getItem('jupiter-vk') === '0') vkShow(false); } catch (e) { /* 既定の表示のまま */ }
   /* 固定フッターの高さぶん、本文の下に余白を取る */
-  const fitFooter = () => { $('app').style.paddingBottom = ($('bar').offsetHeight + 16) + 'px'; };
+  const fitFooter = () => { const h = ($('bar').offsetHeight + 16) + 'px'; $('app').style.paddingBottom = h; $('keys').style.paddingBottom = h; $('ext').style.paddingBottom = h; };
   if (window.ResizeObserver) new ResizeObserver(fitFooter).observe($('bar'));
   window.addEventListener('resize', fitFooter);
 
