@@ -23,6 +23,7 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 ようはogm10-Jupiter用にVIALを改造したものです。
 
 **https://oogamizin.github.io/KeyBord.ogm10-Jupiter/**
+
 左ノブを押し込みしたまま、右下のキー（→）を押仕込みでもChromeで開くように仕込んでます。
 
 使い方は [docs/README.md](docs/README.md) にあります。
