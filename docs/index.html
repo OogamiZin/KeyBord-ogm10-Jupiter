@@ -163,6 +163,22 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .menu .mitem:hover, .menu .mitem:focus-visible { background: var(--chip); }
 .menu .mn { font-family: var(--mono); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu .md { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gt { --gc: #6b7280; }
+@media (prefers-color-scheme: dark) { .gt { --gc: #9aa4b2; } }
+.lchip.trigchip { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: 12px; font-weight: 600; text-align: center; }
+.trigview > .hint { margin: 0 0 8px; }
+.tboard { border-top-color: var(--line); }
+.k.th > div { background: color-mix(in srgb, var(--dirty) 30%, var(--panel)); border-color: var(--dirty); box-shadow: inset 0 0 0 .2cqw var(--dirty); opacity: 1; }
+.k.tp > div { background: color-mix(in srgb, var(--accent) 26%, var(--panel)); border-color: var(--accent); box-shadow: inset 0 0 0 .2cqw var(--accent); opacity: 1; }
+.tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 8px; margin-top: 12px; }
+body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.titem { display: flex; flex-direction: column; gap: 3px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: default; }
+.titem.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.titem .tn { font-size: 14px; font-weight: 700; }
+.titem .th2 { font-size: 13px; font-weight: 600; }
+.titem .tw { font-size: 13px; }
+.titem .tnote { font-size: 12px; color: var(--sub); }
+.titem .tby { font-size: 11px; color: var(--sub); }
 #tip { position: fixed; z-index: 60; max-width: min(400px, calc(100vw - 16px)); padding: 8px 11px; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 13px; line-height: 1.55; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); pointer-events: none; overflow-wrap: anywhere; }
 #tip strong { display: block; font-family: var(--mono); margin-bottom: 2px; }
 #tip div { white-space: pre-line; }
@@ -279,6 +295,7 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
       <button id="kReload">読み直す</button>
       <button id="kSave" class="primary">キーボードに書き込む</button>
     </div>
+    <div id="kTrig" class="trigview" hidden></div>
     <div id="kboard" class="board"></div>
     <div id="kedit">
       <div class="row">
@@ -347,7 +364,8 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
         </div>
         <div id="board" class="board"></div>
         <dl id="legend" hidden></dl>
-    <p class="hint nopip">キーの左上の青い文字は、Shift を押しながら打つと出る文字です（JIS 配列）。薄い表示は、下のレイヤーの割り当てがそのまま効いているキーです。丸いキーはエンコーダーの回転（↺ 反時計回り、↻ 時計回り）です。</p>
+        <div id="dTrig" class="trigview" hidden></div>
+    <p id="dHint" class="hint nopip">キーの左上の青い文字は、Shift を押しながら打つと出る文字です（JIS 配列）。薄い表示は、下のレイヤーの割り当てがそのまま効いているキーです。丸いキーはエンコーダーの回転（↺ 反時計回り、↻ 時計回り）です。</p>
       </div>
     </div>
   </div>
@@ -1412,7 +1430,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('status').title = name + '（マクロ ' + v.macroCount + ' 個）';
     $('intro').hidden = true; $('modes').hidden = false;
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
-    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null;
+    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false;
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
     $('btnSave').disabled = false; $('btnReload').disabled = false;
@@ -1450,6 +1468,39 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       { group: 'Mac', name: '基本' }, { group: 'Mac', name: '数字' }, { group: 'Mac', name: '機能' },
       { group: 'マクロ', name: '' }, { group: 'ユーザー', name: '' },
     ],
+    /* ファームウェアに組み込んだ特殊な操作（keymap.c の USER CODE と config.h に対応）。
+       hold: 押したままにするキー、press: 押すキー（いずれも [行, 列]）。byKey: キーの割り当てで判定するもの（表示は初期配置の位置） */
+    triggers: [
+      { name: 'レイヤー固定', how: 'LyrStat（左ノブ押し込み）を押したまま、Q W E R T Y U または P の位置を押す',
+        what: 'Q〜U の位置でレイヤー 1〜7、P の位置でレイヤー 0 に固定します。固定中に LyrStat を押したまま何かキーを押すと、基本レイヤー（Win は 0、Mac は 3）に戻ります。',
+        note: 'LyrStat を押している間に押したキーは、PC に送られません。Mac 接続中にレイヤー 0〜2 を選ぶと、透過キーはレイヤー 0 のキーになります。',
+        hold: [[0, 0]], press: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 10]], byKey: true },
+      { name: '今のレイヤーを入力', how: 'LyrStat を単押し',
+        what: '英数に切り替えてから「Layer 4 (default 3: macOS)」のように、今のレイヤーと基本レイヤーを入力します。',
+        press: [[0, 0]], byKey: true },
+      { name: 'その場マクロ：記録開始', how: 'Ctrl・Shift・@ の位置を押したまま、M の位置を押す',
+        what: 'M の位置を離したときから、キー操作の記録を始めます。',
+        note: '記録できるのは、押す・離すを合わせて 1280 件（約 640 打鍵）までです。電源を切ると消えます。',
+        hold: [[3, 0], [2, 0], [2, 11]], press: [[2, 7]] },
+      { name: 'その場マクロ：再生', how: 'Ctrl・Shift・@ の位置を押したまま、L の位置を押す',
+        what: '記録した操作を再生します。記録中なら、記録を止めてから再生します。',
+        note: '再生中に Alt（Mac は Cmd）+Tab でウインドウを切り替えると、Alt を離したあと 0.3 秒待ってから続きを送ります。',
+        hold: [[3, 0], [2, 0], [2, 11]], press: [[1, 9]] },
+      { name: 'その場マクロ：記録停止', how: 'Ctrl・Shift・@ の位置を押したまま、P の位置を押す',
+        what: 'その場マクロの記録を止めます。',
+        hold: [[3, 0], [2, 0], [2, 11]], press: [[0, 10]] },
+      { name: 'ブートローダーに入る', how: '左ノブ押し込み・右ノブ押し込み・BS の位置を同時に押す',
+        what: 'ファームウェアの書き込みモードに入ります。パソコンには RPI-RP2 ドライブとして見えます。',
+        hold: [[0, 0], [0, 11]], press: [[1, 11]] },
+      { name: '書き込みのロック解除', how: 'Q と P の位置を同時に長押し',
+        what: 'Vial やこの設定ツールから、マクロなどを書き込めるようにします。書き込み時に案内が出たら行います。',
+        hold: [[0, 1], [0, 10]] },
+      { name: 'Mac で Alt+Tab を Cmd+Tab に', how: 'Mac 接続中に、Alt を押したまま Tab',
+        what: 'Cmd+Tab として送ります。Alt を離すまで Cmd を押したままにするので、Tab を続けて押してアプリを選べます（Shift で逆順）。',
+        hold: [[3, 2]], press: [[1, 0]], byKey: true },
+      { name: '接続先 OS で基本レイヤーを切り替え', how: '接続したとき（自動）',
+        what: 'Mac・iPhone・iPad なら基本レイヤーを 3、それ以外は 0 にします。' },
+    ],
     customKeycodes: [
       { name: 'MAC_SCREENSHOT', shortName: 'MacSS', title: 'Mac の範囲指定スクリーンショット（Shift+Cmd+Ctrl+4）。選んだ範囲をクリップボードにコピーします' },
       { name: 'LAYER_INFO', shortName: 'LyrInfo', title: '接続先の OS で決まる基本レイヤーの説明を英文で入力します（Mac は 3、それ以外は 0）' },
@@ -1459,9 +1510,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     layouts: { keymap: [[{"w":0.75},"0,0",{"x":10.5,"w":0.75},"0,11"],[{"y":-0.75,"x":0.75},"0,1","0,2","0,3","0,4","0,5","0,6","0,7","0,8","0,9","0,10"],["1,0","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","1,10","1,11"],[{"w":1.5},"2,0","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8",{"x":0.5},"2,10","2,11"],["3,0",{"x":0.25},"3,1","3,2",{"x":0.25},"3,3",{"w":1.5},"3,4",{"w":1.5},"3,6","3,7",{"x":0.5},"3,9","3,10","3,11"],[{"y":0.25},"0,0\n\n\n\n\n\n\n\n\ne","0,1\n\n\n\n\n\n\n\n\ne",{"x":8},"1,0\n\n\n\n\n\n\n\n\ne","1,1\n\n\n\n\n\n\n\n\ne"]] },
   };
   const isJupiter = () => !!st.vial && JUPITER.uid.every((b, i) => st.vial.uid[i] === b);
-  const D = { def: null, defNote: '', keymap: null, enc: null, layers: 0, state: null, supported: null, pin: null, timer: null, busy: false, pip: null, mode: 'macro' };
+  const D = { trig: false, def: null, defNote: '', keymap: null, enc: null, layers: 0, state: null, supported: null, pin: null, timer: null, busy: false, pip: null, mode: 'macro' };
   /* 小窓に移しても参照できるよう、表示用の要素は最初に取っておく */
-  const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), pip: $('btnPip'), reload: $('btnKeymap') };
+  const E = { body: $('dispBody'), layer: $('dLayer'), chips: $('dChips'), status: $('dStatus'), board: $('board'), legend: $('legend'), trig: $('dTrig'), hint: $('dHint'), pip: $('btnPip'), reload: $('btnKeymap') };
 
   /* レイヤーの用途名。キーボードの定義にあればそれを、なければ Jupiter 用の内蔵の名前を使う */
   function layerInfo(l) {
@@ -1522,6 +1573,58 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         wrap.appendChild(b); last = info.group;
       } else { box.appendChild(b); last = null; }
     }
+  }
+  /* ---- 独自トリガー（ファームウェアに組み込んだ特殊な操作）の一覧 ---- */
+  const T = { sel: 0 };
+  const trigList = () => (isJupiter() ? JUPITER.triggers : null);
+  /* レイヤー一覧の下に「独自トリガー」の項目を足す */
+  function addTrigChip(box, doc, on, onClick) {
+    if (!trigList()) return;
+    const wrap = doc.createElement('span'); wrap.className = 'lgroup gt' + (on ? ' act' : '');
+    const b = doc.createElement('button'); b.className = 'lchip trigchip' + (on ? ' on' : ''); b.textContent = '独自トリガー';
+    b.title = 'ファームウェアに組み込んだ特殊な操作の一覧';
+    b.addEventListener('click', onClick);
+    wrap.appendChild(b); box.appendChild(wrap);
+  }
+  function renderTrig(box, doc) {
+    const list = trigList();
+    box.textContent = '';
+    if (!list || !D.def || !D.keymap) return;
+    if (T.sel >= list.length) T.sel = 0;
+    const head = doc.createElement('p'); head.className = 'hint';
+    head.textContent = 'ファームウェアに組み込んだ特殊な操作です。項目にカーソルを乗せると、使うキーの位置が盤面に出ます（オレンジ: 押したままにするキー、青: 押すキー）。キーの表示はレイヤー 0（Win 基本）です。';
+    const board = doc.createElement('div'); board.className = 'board tboard';
+    const ul = doc.createElement('div'); ul.className = 'tlist';
+    box.append(head, board, ul);
+    const LAYOUT = D.def.layout, ctx = { macros: st.macros, custom: D.def.custom };
+    const items = [];
+    const paint = () => {
+      const t = list[T.sel] || {}, has = (arr, k) => (arr || []).some(([r, c]) => k.row === r && k.col === c);
+      board.style.aspectRatio = LAYOUT.width + ' / ' + LAYOUT.height;
+      board.textContent = '';
+      for (const k of LAYOUT.keys) {
+        const kc = k.enc !== undefined ? D.enc[0][k.enc][k.dir] : D.keymap[0][k.row][k.col], lab = C.keyLabel(kc, ctx);
+        const el = doc.createElement('div');
+        el.className = 'k ' + lab.kind + (k.enc !== undefined ? ' enc' : '') + (k.enc === undefined && has(t.hold, k) ? ' th' : k.enc === undefined && has(t.press, k) ? ' tp' : '');
+        el.style.left = (k.x / LAYOUT.width * 100) + '%'; el.style.top = (k.y / LAYOUT.height * 100) + '%';
+        el.style.width = (k.w / LAYOUT.width * 100) + '%'; el.style.height = (k.h / LAYOUT.height * 100) + '%';
+        const bx = doc.createElement('div'), m = doc.createElement('span');
+        const main = (k.enc !== undefined ? (k.dir ? '↻ ' : '↺ ') : '') + lab.main;
+        m.className = 'm' + (main.length > 4 * k.w ? ' long' : ''); m.textContent = main; bx.appendChild(m);
+        el.appendChild(bx); board.appendChild(el);
+      }
+      items.forEach((it, i) => it.classList.toggle('sel', i === T.sel));
+    };
+    list.forEach((t, i) => {
+      const it = doc.createElement('div'); it.className = 'titem';
+      const add = (cls, text) => { if (!text) return; const e = doc.createElement('div'); e.className = cls; e.textContent = text; it.appendChild(e); };
+      add('tn', t.name); add('th2', t.how); add('tw', t.what); add('tnote', t.note);
+      add('tby', t.hold || t.press ? (t.byKey ? 'キーの割り当てで判定（盤面は初期配置の位置）' : '物理的なキー位置で判定（レイヤーや割り当てに関係なく動きます）') : '');
+      it.addEventListener('mouseenter', () => { T.sel = i; paint(); });
+      it.addEventListener('click', () => { T.sel = i; paint(); });
+      items.push(it); ul.appendChild(it);
+    });
+    paint();
   }
   function setMode(m) {
     if (st.capturing) setCapture(false);
@@ -1610,6 +1713,15 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       b.addEventListener('click', () => chipClick(l));
       return b;
     });
+    addTrigChip(E.chips, doc, D.trig, () => { D.trig = !D.trig; dispRender(); });
+    E.trig.hidden = !D.trig; E.board.hidden = !!D.trig; E.hint.hidden = !!D.trig;
+    if (D.trig) {
+      E.legend.hidden = true; tipHide(doc);
+      E.status.textContent = '独自トリガーの一覧（レイヤー番号を押すと盤面の表示に戻ります）';
+      renderTrig(E.trig, doc);
+      return;
+    }
+    E.trig.textContent = '';
     E.status.textContent = st.demo ? 'デモ: 番号をクリックするとレイヤーが切り替わります（0 と 3 は Win / Mac の基本レイヤーの切り替え）'
       : D.supported === false ? 'このファームウェアはレイヤー通知に未対応です。番号をクリックして表示を切り替えてください。'
       : D.pin !== null ? 'レイヤー ' + D.pin + ' を固定表示中（もう一度クリックすると追従に戻ります）'
@@ -1648,6 +1760,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     E.legend.hidden = !rows.length;
   }
   function chipClick(l) {
+    if (D.trig) { D.trig = false; if (!(st.demo && st.mock)) { dispRender(); return; } }
     if (st.demo && st.mock) {
       const m = st.mock;
       if (l === 0 || l === 3) m.setLayerState(0, 1 << l); else m.setLayerState(m.ls ^ (1 << l), m.ds);
@@ -1662,7 +1775,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   });
 
   /* ---- キー割り当ての編集 ---- */
-  const K = { layer: 0, sel: 0, edit: null, encEdit: null, vil: null, vkHidden: false };
+  const K = { trig: false, layer: 0, sel: 0, edit: null, encEdit: null, vil: null, vkHidden: false };
   const clone = x => JSON.parse(JSON.stringify(x));
   function kToast(msg, ok) { const t = $('kToast'); t.textContent = msg; t.className = ok ? 'ok' : 'ng'; }
   const kKeys = () => D.def.layout.keys;
@@ -1739,9 +1852,17 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       const b = document.createElement('button');
       b.className = 'lchip' + (l === K.layer ? ' on' : '') + (changedLayers.has(l) ? ' chg' : '');
       b.textContent = l; b.title = layerLabel(l);
-      b.addEventListener('click', () => { K.layer = l; keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); });
+      b.addEventListener('click', () => { K.trig = false; K.layer = l; keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow(); });
       return b;
     });
+    addTrigChip($('kTabs'), document, K.trig, () => { K.trig = !K.trig; if (st.capturing) setCapture(false); keysRender(); keysShowSel(); });
+    $('kTrig').hidden = !K.trig; $('kboard').hidden = !!K.trig; $('kedit').hidden = !!K.trig;
+    if (K.trig) {
+      $('kStatus').textContent = (changes.length ? '未保存の変更 ' + changes.length + ' 件 ／ ' : '') + '独自トリガーの一覧（レイヤー番号を押すと編集に戻ります）';
+      tipHide(document); renderTrig($('kTrig'), document);
+      return;
+    }
+    $('kTrig').textContent = '';
     const cur = layerInfo(K.layer);
     $('kboard').style.borderTopColor = cur && cur.gi >= 0 ? getComputedStyle($('kTabs').querySelector('.lgroup.act')).borderLeftColor : 'transparent';
     $('kStatus').textContent = changes.length ? '未保存の変更 ' + changes.length + ' 件' : '変更なし';
