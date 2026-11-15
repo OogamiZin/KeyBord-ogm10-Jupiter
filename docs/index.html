@@ -95,27 +95,28 @@ progress { width: 100%; height: 12px; }
 #modes { display: flex; gap: 4px; }
 #modes button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 #disp { padding: 12px 16px 24px; }
-#dispBody { max-width: 1290px; margin: 0 auto; }
+#dispBody { max-width: 1226px; margin: 0 auto; }
 /* レイヤーの一覧は左の列に縦に並べる */
-.lwrap { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 16px; align-items: start; }
+.lwrap { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: start; }
 .lside { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 8px; }
 .lside .ltitle { font-size: 16px; font-weight: 700; }
 .lside #dChips, .lside #kTabs { display: flex; flex-direction: column; gap: 8px; }
 .lside .lgroup { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; }
 .lside .lgroup > .gname { margin: 0 0 1px 2px; font-size: 13px; }
 .lside .lchip { width: 100%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body.pip .lwrap { grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
+body.pip .lwrap { grid-template-columns: 84px minmax(0, 1fr); gap: 8px; }
 body.pip .lside { position: sticky; }
 body.pip .lside #dChips { flex-direction: column; flex-wrap: nowrap; gap: 5px; }
 body.pip .lside .lgroup { flex-direction: column; align-items: stretch; padding: 4px; gap: 3px; }
 body.pip .lside .lchip { width: 100%; padding: 1px 6px; }
 body.pip #dLayer { font-size: 16px; }
+body.pip .lbadge { font-size: 12px; padding: 1px 8px; }
 body.pip { padding: 8px; }
 body.pip #dispBody { max-width: none; }
 body.pip .nopip { display: none; }
 .dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; }
 #dLayer { font-size: 22px; font-weight: 700; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.lbadge { font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; background: var(--gc, var(--sub)); white-space: nowrap; }
+.lbadge { font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #fff; background: var(--gc, var(--sub)); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .lgroup { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 8px; border: 1px solid var(--gc, var(--line)); border-radius: 8px; border-left-width: 5px; }
 .lgroup > .gname { font-size: 12px; font-weight: 700; color: var(--gc, var(--sub)); margin-right: 2px; white-space: nowrap; }
 .lgroup.act { background: color-mix(in srgb, var(--gc, var(--line)) 12%, transparent); }
@@ -131,7 +132,7 @@ body.pip .nopip { display: none; }
 .lchip.pin { outline: 2px solid var(--dirty); outline-offset: 1px; }
 .board { position: relative; width: 100%; container-type: inline-size; }
 #keys { padding: 12px 16px 32px; }
-#keysBody { max-width: 1132px; margin: 0 auto; }
+#keysBody { max-width: 1068px; margin: 0 auto; }
 #kboard .k { cursor: pointer; }
 .k.sel > div { outline: .32cqw solid var(--accent); outline-offset: -.1cqw; }
 .k.chg > div { border-color: var(--dirty); box-shadow: inset 0 0 0 .18cqw var(--dirty); }
