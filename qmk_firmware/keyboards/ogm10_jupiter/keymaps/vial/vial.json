@@ -23,6 +23,11 @@
       "name": "LAYER_STATUS",
       "title": "単押し: 今のレイヤーと基本レイヤーを文字で入力します（例: Layer 4 (default 3: macOS)）。押しながら Q W E R T Y U の位置: レイヤー 1〜7 に固定、P の位置: レイヤー 0 に固定。固定中は、押しながらどのキーを押しても解除します",
       "shortName": "LyrStat"
+    },
+    {
+      "name": "AUTO_CLICK",
+      "title": "押している間、マウスの左クリックを連打します（1 秒に約 20 回）",
+      "shortName": "AutoClk"
     }
   ],
   "matrix": {

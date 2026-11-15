@@ -19,6 +19,7 @@ enum custom_keycodes {
     LAYER_INFO,
     SQL_SELECT_TMP,
     LAYER_STATUS,
+    AUTO_CLICK,          // 押している間、左クリックを連打する
 };
 /* USER INCLUDE END */
 
@@ -428,6 +429,25 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+// ---- AUTO_CLICK: 押している間、左クリックを連打する ----
+// AUTO_CLICK_HALF_MS ごとにボタンを押す/離すを切り替える（25ms なら 1 秒に 20 回）
+#define AUTO_CLICK_HALF_MS 25
+static bool     auto_click_held = false;
+static bool     auto_click_down = false;
+static uint16_t auto_click_timer = 0;
+
+static void auto_click_task(void) {
+    if (!auto_click_held) return;
+    if (timer_elapsed(auto_click_timer) < AUTO_CLICK_HALF_MS) return;
+    auto_click_timer = timer_read();
+    if (auto_click_down) {
+        unregister_code(KC_MS_BTN1);
+    } else {
+        register_code(KC_MS_BTN1);
+    }
+    auto_click_down = !auto_click_down;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // 左ノブ押し込み + 右ノブ押し込み + Backspace（いずれも物理位置: [0,0] [0,11] [1,11]）の3つ同時押しで
     // ブートローダー（QK_BOOT）に入る。マトリクスを直接見るので、レイヤーやキー割り当てに関係なく動く
@@ -482,6 +502,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     switch (keycode) {
+        case AUTO_CLICK:
+            auto_click_held = record->event.pressed;
+            if (record->event.pressed) {
+                auto_click_down = false;
+                auto_click_timer = timer_read() - AUTO_CLICK_HALF_MS;   // 押した瞬間に1回目
+            } else if (auto_click_down) {
+                unregister_code(KC_MS_BTN1);
+                auto_click_down = false;
+            }
+            return false;
+
         case SQL_SELECT_TMP:
             if (record->event.pressed) {
                 // 英数(IMEオフ)に切り替えてからSQLのひな形を入力
@@ -648,6 +679,7 @@ void housekeeping_task_user(void) {
             default_layer_set(1UL << 0);
         }
     }
+    auto_click_task();
     jup_hid_task();
 }
 
