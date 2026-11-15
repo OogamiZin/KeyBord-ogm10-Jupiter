@@ -45,6 +45,9 @@ input[type=text], input[type=number] { font: inherit; color: var(--ink); backgro
 #banner { margin: 12px 16px 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
 #intro { max-width: 760px; margin: 28px auto; padding: 0 16px; color: var(--sub); }
 #intro p { margin: 0 0 10px; }
+#intro ul { margin: 0 0 12px; padding-left: 1.4em; }
+#intro li { margin: 0 0 6px; }
+#intro b { color: var(--fg, inherit); }
 main { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; padding: 12px 16px 96px; }
 #list { display: flex; flex-direction: column; gap: 4px; }
 .item { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 6px; text-align: left; padding: 6px 8px; }
@@ -300,9 +303,15 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 <div id="banner" hidden></div>
 
 <div id="intro">
-  <p>Vial 対応ファームのキーボードに WebHID で接続し、マクロ（M0〜）を編集します。ファームの書き換えは不要です。</p>
-  <p>マクロはテキストで書きます。文章やコードはそのまま貼り付けられ、キー操作は <code>{LCTL+C}</code> のように波かっこで書きます。</p>
-  <p>キーボードが手元にない場合は「デモで試す」で画面と変換の動きを確認できます。</p>
+  <p>ogm10-Jupiter などの Vial 対応キーボードに、ブラウザ（Chrome・Edge）から接続して設定する画面です。ファームウェアの書き換えは不要です。</p>
+  <ul>
+    <li><b>マクロ</b>: M0〜のマクロをテキストで編集します。文章やコードはそのまま貼り付けられ、キー操作は <code>{LCTL+C}</code> のように波かっこで書きます。</li>
+    <li><b>キー割当</b>: レイヤーごとのキーとエンコーダーの割り当てを変えます。組み合わせキーや長押しも、仮想キーボード・一覧・QMK の書き方（<code>LT(2, KC_LBRC)</code> など）で設定できます。</li>
+    <li><b>拡張</b>: タップダンス・コンボ・キーオーバーライドを設定します。</li>
+    <li><b>レイヤ監視</b>: 今効いているレイヤーの割り当てを表示します。小窓にして、他のアプリの上に浮かせられます。</li>
+  </ul>
+  <p>変更は右上の「書込」でまとめてキーボードに書き込みます。「エクスポート」「インポート」で、設定全体を Vial と同じ .vil ファイルに保存・読み込みできます。</p>
+  <p>キーボードが手元にない場合は「デモで試す」で、模擬キーボードを相手に一通りの操作を試せます。</p>
 </div>
 
 <main id="app" hidden>
