@@ -463,12 +463,48 @@ static void auto_click_task(void) {
     auto_click_down = !auto_click_down;
 }
 
+// ---- 左ノブ押し込み + 右下キー（物理位置 [3,11]、レイヤー0 では →）で設定ツールを Chrome で開く ----
+// Mac: Spotlight で Google Chrome を起動 → 新しいタブ → URL を入力
+// Windows など: Win+R（ファイル名を指定して実行）に「chrome <URL>」を入力
+#define CONFIG_TOOL_URL "https://oogamizin.github.io/KeyBord.ogm10-Jupiter/"
+#define OPEN_TOOL_POS_ROW 3
+#define OPEN_TOOL_POS_COL 11
+
+static void open_config_tool(void) {
+    clear_mods();
+    clear_oneshot_mods();
+    tap_code(KC_LANGUAGE_2);              // 英数（IME オフ）
+    wait_ms(50);
+    if (os_default_layer == 3) {
+        tap_code16(LGUI(KC_SPACE));       // Spotlight
+        wait_ms(400);
+        SEND_STRING("Google Chrome");
+        wait_ms(400);
+        tap_code(KC_ENTER);
+        wait_ms(1500);                    // Chrome が前面に来るまで
+        tap_code16(LGUI(KC_T));           // 新しいタブ
+        wait_ms(300);
+        SEND_STRING(CONFIG_TOOL_URL);
+    } else {
+        tap_code16(LGUI(KC_R));           // ファイル名を指定して実行
+        wait_ms(500);
+        SEND_STRING("chrome " CONFIG_TOOL_URL);
+    }
+    tap_code(KC_ENTER);
+}
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // 左ノブ押し込み + 右ノブ押し込み + Backspace（いずれも物理位置: [0,0] [0,11] [1,11]）の3つ同時押しで
     // ブートローダー（QK_BOOT）に入る。マトリクスを直接見るので、レイヤーやキー割り当てに関係なく動く
     if (record->event.pressed &&
         matrix_is_on(0, 0) && matrix_is_on(0, 11) && matrix_is_on(1, 11)) {
         reset_keyboard();
+        return false;
+    }
+    // 左ノブを押したまま右下キー → 設定ツールを開く（左ノブの単押し動作・レイヤー固定は行わない）
+    if (record->event.pressed && matrix_is_on(0, 0) &&
+        record->event.key.row == OPEN_TOOL_POS_ROW && record->event.key.col == OPEN_TOOL_POS_COL) {
+        layer_key_used = true;
+        open_config_tool();
         return false;
     }
     if (layer_key_combo_process(keycode, record)) return false;
