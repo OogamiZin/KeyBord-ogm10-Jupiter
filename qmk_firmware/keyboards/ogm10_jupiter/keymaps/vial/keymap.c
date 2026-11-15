@@ -12,6 +12,8 @@
 #include "sendstring_japanese.h"
 // レイヤー表示ツールへ現在のレイヤーを知らせるために Raw HID を使う
 #include "raw_hid.h"
+// 設定ツールに初期設定（keymap.c に書いた割り当て）を返すため
+#include "keymap_introspection.h"
 
 enum custom_keycodes {
     // VialのGUIで選べるよう、vial.jsonのcustomKeycodesと同じ順でQK_KB_0から割り当てる
@@ -664,9 +666,17 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
 //   キーボード -> PC: [0xF7, 0x01, 1, 最上位レイヤー, layer_state(4バイト LE), default_layer_state(4バイト LE), OS別デフォルトレイヤー]
 //   キーボード -> PC: [0xF7, 0x02, ...同じ内容]  申し込み中にレイヤーが変わったとき、キーボード側から送る通知
 // 表示ツールは 1 秒ごとに問い合わせ直すので、ツールを閉じれば 3 秒で通知は止まる（標準の Vial には影響しない）
+//
+// キー1個単位で「初期設定に戻す」ための問い合わせ（書き込みはしない。読むだけ）
+//   PC -> キーボード: [0xF7, 0x03, 位置(上位), 位置(下位)]  位置 = (レイヤー * MATRIX_ROWS + 行) * MATRIX_COLS + 列
+//   キーボード -> PC: [0xF7, 0x03, 位置(上位), 位置(下位), その位置から 14 キーぶんの初期キーコード（各 2 バイト、上位が先）]
+//   PC -> キーボード: [0xF7, 0x04, レイヤー, エンコーダー番号]
+//   キーボード -> PC: [0xF7, 0x04, レイヤー, エンコーダー番号, 反時計回り(2 バイト), 時計回り(2 バイト)]
 #define JUP_HID_ID            0xF7
 #define JUP_HID_GET           0x01
 #define JUP_HID_PUSH          0x02
+#define JUP_HID_DEFAULT_KEYS  0x03
+#define JUP_HID_DEFAULT_ENC   0x04
 #define JUP_HID_VERSION       1
 #define JUP_HID_SUBSCRIBE_MS  3000
 
@@ -703,6 +713,33 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
         jup_hid_sub_timer  = timer_read32();
         return;
     }
+    if (length >= 32 && data[0] == JUP_HID_ID && data[1] == JUP_HID_DEFAULT_KEYS) {
+        const uint16_t total = (uint16_t)DYNAMIC_KEYMAP_LAYER_COUNT * MATRIX_ROWS * MATRIX_COLS;
+        uint16_t pos = ((uint16_t)data[2] << 8) | data[3];
+        for (uint8_t i = 0; i < 14; i++, pos++) {
+            uint16_t kc = 0;
+            if (pos < total) {
+                uint8_t layer = pos / (MATRIX_ROWS * MATRIX_COLS);
+                uint8_t rc    = pos % (MATRIX_ROWS * MATRIX_COLS);
+                kc = keycode_at_keymap_location_raw(layer, rc / MATRIX_COLS, rc % MATRIX_COLS);
+            }
+            data[4 + i * 2] = kc >> 8;
+            data[5 + i * 2] = kc & 0xFF;
+        }
+        return;
+    }
+#ifdef ENCODER_MAP_ENABLE
+    if (length >= 8 && data[0] == JUP_HID_ID && data[1] == JUP_HID_DEFAULT_ENC) {
+        uint16_t ccw = 0, cw = 0;
+        if (data[2] < DYNAMIC_KEYMAP_LAYER_COUNT && data[3] < NUM_ENCODERS) {
+            ccw = keycode_at_encodermap_location_raw(data[2], data[3], false);
+            cw  = keycode_at_encodermap_location_raw(data[2], data[3], true);
+        }
+        data[4] = ccw >> 8; data[5] = ccw & 0xFF;
+        data[6] = cw >> 8;  data[7] = cw & 0xFF;
+        return;
+    }
+#endif
     data[0] = 0xFF; // id_unhandled（未対応コマンド）
 }
 

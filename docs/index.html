@@ -229,6 +229,9 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <div id="usebar" hidden><div></div></div>
     </div>
     <span id="hdrMsg" hidden></span>
+    <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、1 つのファイルに保存します">エクスポート</button>
+    <button id="btnImport2" hidden title="エクスポートしたファイル（または Vial の .vil）から、全体の設定を読み込みます">インポート</button>
+    <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
     <button id="btnWrite" class="wbtn" hidden title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
@@ -330,6 +333,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
         <button id="kTrns" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
         <button id="kNo" title="何も送らない">✕ 無効</button>
         <button id="kRevert">このキーを元に戻す</button>
+        <button id="kKeyDefault" title="このキーだけ、ファームウェア（keymap.c）の初期設定の割り当てに戻します">このキーを初期設定に</button>
       </div>
       <div class="row">
         <div class="group"><span class="cap">長押しでレイヤー</span><select id="kLtLayer"></select><button id="kLt">追加設定</button></div>
@@ -1230,6 +1234,27 @@ const JupiterCore = (() => {
     async setEncoder(layer, idx, dir, kc) { await this.cmd([0xFE, 0x04, layer, idx, dir, kc >> 8, kc & 0xFF]); }
     /* 現在のレイヤー状態（兼、変化通知の申し込み） */
     async layerState() { return parseLayerState(await this.cmd([0xF7, 0x01])); }
+    /* ファームウェアの初期設定（keymap.c の割り当て）を読む。対応していないファームでは例外 */
+    async readDefaults(layers, rows, cols, encoders) {
+      const total = layers * rows * cols, flat = [];
+      for (let pos = 0; pos < total; pos += 14) {
+        const r = await this.cmd([0xF7, 0x03, pos >> 8, pos & 0xFF]);
+        if (r[0] !== 0xF7 || r[1] !== 0x03 || ((r[2] << 8) | r[3]) !== pos) throw new Error('unsupported');
+        for (let i = 0; i < 14 && pos + i < total; i++) flat.push((r[4 + i * 2] << 8) | r[5 + i * 2]);
+      }
+      const km = [];
+      for (let l = 0; l < layers; l++) { km.push([]); for (let rr = 0; rr < rows; rr++) km[l].push(flat.slice((l * rows + rr) * cols, (l * rows + rr + 1) * cols)); }
+      const enc = [];
+      for (let l = 0; l < layers; l++) {
+        enc.push([]);
+        for (let i = 0; i < encoders; i++) {
+          const r = await this.cmd([0xF7, 0x04, l, i]);
+          if (r[0] !== 0xF7 || r[1] !== 0x04) throw new Error('unsupported');
+          enc[l].push([(r[4] << 8) | r[5], (r[6] << 8) | r[7]]);
+        }
+      }
+      return { keymap: km, enc };
+    }
     cmd(bytes) {
       const pkt = new Uint8Array(PKT); pkt.set(bytes);
       const run = () => this.tr.send(pkt);
@@ -1351,6 +1376,21 @@ const JupiterCore = (() => {
           break;
         }
         case 0xF7:
+          if (this.layerSupport && d[1] === 3) {
+            const x = JSON.parse(this.defaults), per = this.rows * this.cols;
+            let pos = (d[2] << 8) | d[3];
+            for (let i = 0; i < 14; i++, pos++) {
+              const l = Math.floor(pos / per), rc = pos % per, row = x[0][l] && x[0][l][Math.floor(rc / this.cols)];
+              const kc = row ? (row[rc % this.cols] || 0) : 0;
+              d[4 + i * 2] = kc >> 8; d[5 + i * 2] = kc & 0xFF;
+            }
+            break;
+          }
+          if (this.layerSupport && d[1] === 4) {
+            const e = (JSON.parse(this.defaults)[1][d[2]] || [])[d[3]] || [0, 0];
+            d[4] = e[0] >> 8; d[5] = e[0] & 0xFF; d[6] = e[1] >> 8; d[7] = e[1] & 0xFF;
+            break;
+          }
           if (!this.layerSupport || d[1] !== 1) { d[0] = 0xFF; break; }
           this.layerPacket(d, 1); this.subscribed = true; break;
         case 0x0D: d[1] = this.size >> 8; d[2] = this.size & 0xFF; break;
@@ -1491,7 +1531,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('intro').hidden = true; $('modes').hidden = false;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
-    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
+    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; K.defaults = null; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
     $('btnReload').disabled = false;
@@ -2024,6 +2064,21 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   $('kTrns').addEventListener('click', () => keysAssign(1));
   $('kNo').addEventListener('click', () => keysAssign(0));
   $('kRevert').addEventListener('click', () => keysAssign(kBase(K.layer, kKeys()[K.sel]), true));
+  /* このキーだけ初期設定に戻す（初期設定はキーボードから一度だけ読んで覚えておく。書き込むのは「書込」を押したとき） */
+  $('kKeyDefault').addEventListener('click', async () => {
+    if (!st.vial || !K.edit) return;
+    if (!K.defaults) {
+      kToast('初期設定を読み込み中…', true);
+      try { K.defaults = await st.vial.readDefaults(D.layers, D.def.rows, D.def.cols, D.def.encoders); }
+      catch (e) {
+        kToast(e.message === 'unsupported' ? 'このファームウェアは、キー単位の初期設定の問い合わせに対応していません（最新のファームを書き込んでください）' : '初期設定を読めませんでした: ' + e.message, false);
+        return;
+      }
+    }
+    const k = kKeys()[K.sel];
+    keysAssign(kGet(K.defaults.keymap, K.defaults.enc, K.layer, k), true);
+    kToast('初期設定の割り当てにしました（' + C.keycodeToQmk(kVal(K.layer, k), D.def.custom) + '）。「書込」で反映されます', true);
+  });
   $('kCapture').addEventListener('click', () => setCapture(!st.capturing));
   /* 今の割り当てからタップ側のキーを取り出す（長押し付きなら外側を外す） */
   function keysTapPart() {
@@ -2125,12 +2180,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const b = $('btnWrite'); if (!b) return;
     const p = pendingCount(), n = p.macros + p.keys;
     for (const x of [b, $('kSave')]) { x.textContent = n ? '書込（' + n + ' 件）' : '書込'; x.classList.toggle('pending', n > 0); }
-    if (n && !b.disabled) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
+    if (n && !b.disabled && !$('hdrMsg').dataset.keep) $('hdrMsg').hidden = true;  /* 新しい変更が出たら、前回の結果表示は消す */
   }
   /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
   function updateHeaderButtons() {
     const on = !!st.vial;
-    $('btnDemo').hidden = on; $('btnWrite').hidden = !on;
+    $('btnDemo').hidden = on; $('btnWrite').hidden = !on; $('btnExport2').hidden = !on; $('btnImport2').hidden = !on;
     const c = $('btnConnect');
     c.textContent = on ? '接続解除' : 'キーボードに接続';
     c.classList.toggle('primary', !on);
@@ -2163,7 +2218,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   let hdrTimer = null;
   function hdrMsg(msg, ok) {
-    const m = $('hdrMsg'); m.textContent = msg; m.className = ok ? 'ok' : 'ng'; m.hidden = !msg;
+    const m = $('hdrMsg'); m.textContent = msg; m.className = ok ? 'ok' : 'ng'; m.hidden = !msg; delete m.dataset.keep;
     clearTimeout(hdrTimer);
     if (msg && ok) hdrTimer = setTimeout(() => { m.hidden = true; }, 6000);
   }
@@ -2181,6 +2236,92 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     hdrMsg(parts.join(' ／ '), ok); updateWriteBtn();
   }
   $('btnWrite').addEventListener('click', writeAll);
+
+  /* ---- 全体のエクスポート / インポート（キー割当・エンコーダー・マクロ） ---- */
+  async function ensureKeys() {
+    if (!D.keymap) await dispLoadKeymap();
+    if (!K.edit) { K.edit = clone(D.keymap); K.encEdit = clone(D.enc); }
+  }
+  async function exportAll() {
+    if (!st.vial) return;
+    try { await ensureKeys(); } catch (e) { hdrMsg('読み込みに失敗: ' + e.message, false); return; }
+    const cu = D.def.custom, layers = [];
+    for (let l = 0; l < D.layers; l++) {
+      layers.push({ layer: l, name: layerLabel(l), keys: K.edit[l].map(row => row.map(kc => C.keycodeToQmk(kc, cu))),
+        encoders: (K.encEdit[l] || []).map(e => [C.keycodeToQmk(e[0], cu), C.keycodeToQmk(e[1], cu)]) });
+    }
+    const data = { format: 'ogm10-jupiter-config', version: 1, keyboard: D.def.name || '', exported: new Date().toISOString(),
+      note: 'キーは行・列の順。エンコーダーは [反時計回り, 時計回り]。マクロは設定ツールの書き方。', layers, macros: st.macros.slice() };
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'ogm10-jupiter-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + '.json';
+    a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const p = pendingCount();
+    hdrMsg('エクスポートしました' + (p.macros + p.keys ? '（書き込んでいない変更も含みます）' : ''), true);
+  }
+  /* Vial の .vil のマクロ（動作の並び）→ この画面の書き方 */
+  function vilMacroToText(actions, cu) {
+    let out = '';
+    for (const a of actions || []) {
+      const [kind, ...args] = a;
+      if (kind === 'text') out += String(args[0] || '').replace(/\{/g, '{{').replace(/\}/g, '}}').replace(/\r/g, '').replace(/\n/g, '{ENTER}\n');
+      else if (kind === 'delay') out += '{WAIT:' + Number(args[0] || 0) + '}';
+      else if (kind === 'tap' || kind === 'down' || kind === 'up') {
+        const sign = kind === 'down' ? '+' : kind === 'up' ? '-' : '';
+        for (const k of args) out += '{' + sign + C.codeToken(C.keycodeFromText(k, cu)) + '}';
+      }
+    }
+    return out;
+  }
+  function parseAllFile(data) {
+    const cu = D.def.custom, keys = [], enc = [];
+    let macros = null;
+    const conv = (v, where) => {
+      if (v === -1 || v === null || v === undefined) return 0;
+      if (typeof v === 'number') return v;
+      try { return C.keycodeFromText(v, cu); } catch (e) { throw new Error(where + '「' + v + '」: ' + e.message); }
+    };
+    if (data && data.format === 'ogm10-jupiter-config' && Array.isArray(data.layers)) {
+      data.layers.forEach((L, i) => {
+        const l = typeof L.layer === 'number' ? L.layer : i;
+        keys[l] = (L.keys || []).map((row, r) => row.map((v, c) => conv(v, 'レイヤー ' + l + '・行 ' + r + '・列 ' + c)));
+        enc[l] = (L.encoders || []).map((e, n) => [conv(e[0], 'レイヤー ' + l + '・ENC' + n), conv(e[1], 'レイヤー ' + l + '・ENC' + n)]);
+      });
+      if (Array.isArray(data.macros)) macros = data.macros.map(x => String(x));
+    } else if (data && Array.isArray(data.layout)) {
+      data.layout.forEach((rows, l) => { keys[l] = rows.map((row, r) => row.map((v, c) => conv(v, 'レイヤー ' + l + '・行 ' + r + '・列 ' + c))); });
+      (data.encoder_layout || []).forEach((list, l) => { enc[l] = list.map((e, n) => [conv(e[0], 'レイヤー ' + l + '・ENC' + n), conv(e[1], 'レイヤー ' + l + '・ENC' + n)]); });
+      if (Array.isArray(data.macro)) macros = data.macro.map((m, i) => { try { return vilMacroToText(m, cu); } catch (e) { throw new Error('M' + i + ': ' + e.message); } });
+    } else throw new Error('この設定ツールのエクスポートファイルでも、Vial の .vil でもありません');
+    return { keys, enc, macros };
+  }
+  async function importAll(file) {
+    try {
+      await ensureKeys();
+      const parsed = parseAllFile(JSON.parse(await file.text()));
+      const p = pendingCount();
+      if (p.macros + p.keys && !confirm('書き込んでいない変更が ' + (p.macros + p.keys) + ' 件あります。読み込んだ内容で上書きしますか？')) return;
+      let nk = 0;
+      for (let l = 0; l < D.layers; l++) {
+        const kl = parsed.keys[l];
+        if (kl) for (let r = 0; r < D.def.rows; r++) for (let c = 0; c < D.def.cols; c++) if (kl[r] && kl[r][c] !== undefined) { K.edit[l][r][c] = kl[r][c]; nk++; }
+        const el = parsed.enc[l];
+        if (el) el.forEach((e, i) => { if (K.encEdit[l][i]) K.encEdit[l][i] = e.slice(0, 2); });
+      }
+      if (parsed.macros) {
+        for (let i = 0; i < st.macros.length; i++) st.macros[i] = i < parsed.macros.length ? parsed.macros[i] : '';
+        $('src').value = st.macros[st.sel];
+      }
+      refresh(); keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow();
+      const q = pendingCount();
+      hdrMsg(file.name + ' を読み込みました（変更 ' + (q.macros + q.keys) + ' 件）。「書込」でキーボードに反映されます', true);
+      clearTimeout(hdrTimer); $('hdrMsg').dataset.keep = '1';
+    } catch (e) { hdrMsg('インポートできませんでした: ' + e.message, false); }
+  }
+  $('btnExport2').addEventListener('click', exportAll);
+  $('btnImport2').addEventListener('click', () => $('fileAll').click());
+  $('fileAll').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importAll(f); });
   $('kDefault').addEventListener('click', async () => {
     const v = st.vial; if (!v || !K.edit) return;
     const n = keysChanges().length;
