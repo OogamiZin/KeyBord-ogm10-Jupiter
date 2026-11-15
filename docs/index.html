@@ -245,8 +245,8 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <div id="usebar" hidden><div></div></div>
     </div>
     <span id="hdrMsg" hidden></span>
-    <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、1 つのファイルに保存します">エクスポート</button>
-    <button id="btnImport2" hidden title="エクスポートしたファイル（または Vial の .vil）から、全体の設定を読み込みます">インポート</button>
+    <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、Vial と同じ .vil 形式で保存します">エクスポート</button>
+    <button id="btnImport2" hidden title=".vil（Vial やこのツールで保存したもの）から、全体の設定を読み込みます">インポート</button>
     <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
     <button id="btnConnect" class="primary">キーボードに接続</button>
     <button id="btnDemo">デモで試す</button>
@@ -2276,23 +2276,43 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (!D.keymap) await dispLoadKeymap();
     if (!K.edit) { K.edit = clone(D.keymap); K.encEdit = clone(D.enc); }
   }
+  /* キーボードの UID（8 バイト、下位から）→ 10 進の文字列。JSON の数値では桁が落ちるので BigInt で作る */
+  function uidDecimal(bytes) {
+    let v = 0n;
+    for (let i = bytes.length - 1; i >= 0; i--) v = (v << 8n) | BigInt(bytes[i]);
+    return v.toString();
+  }
+  /* この画面のマクロ → Vial の .vil のマクロ（動作の並び） */
+  function textToVilMacro(src) {
+    const out = [];
+    for (const a of C.compile(src).actions) {
+      if (a.t === 'text') out.push(['text', a.s]);
+      else if (a.t === 'wait') out.push(['delay', a.ms]);
+      else out.push([a.t, a.kc]);
+    }
+    return out;
+  }
+  /* 全体のエクスポート: Vial と同じ .vil 形式で保存する。
+     キーコードは数値で書く（Vial は数値をそのまま読む。名前だと、Vial の知らない書き方が KC_NO にされるおそれがある） */
   async function exportAll() {
     if (!st.vial) return;
     try { await ensureKeys(); } catch (e) { hdrMsg('読み込みに失敗: ' + e.message, false); return; }
-    const cu = D.def.custom, layers = [];
-    for (let l = 0; l < D.layers; l++) {
-      layers.push({ layer: l, name: layerLabel(l), keys: K.edit[l].map(row => row.map(kc => C.keycodeToQmk(kc, cu))),
-        encoders: (K.encEdit[l] || []).map(e => [C.keycodeToQmk(e[0], cu), C.keycodeToQmk(e[1], cu)]) });
-    }
-    const data = { format: 'ogm10-jupiter-config', version: 1, keyboard: D.def.name || '', exported: new Date().toISOString(),
-      note: 'キーは行・列の順。エンコーダーは [反時計回り, 時計回り]。マクロは設定ツールの書き方。', layers, macros: st.macros.slice() };
+    const bad = st.macros.findIndex(x => C.compile(x).errors.length);
+    if (bad >= 0) { hdrMsg('M' + bad + ' にエラーがあるため、エクスポートできません', false); return; }
+    const inLayout = new Set(D.def.layout.keys.filter(k => k.enc === undefined).map(k => k.row + ',' + k.col));
+    const layout = K.edit.map(rows => rows.map((row, r) => row.map((kc, c) => (inLayout.has(r + ',' + c) ? kc : -1))));
+    const data = {
+      version: 1, uid: '__UID__', layout, encoder_layout: K.encEdit.map(list => list.map(e => [e[0], e[1]])), layout_options: -1,
+      macro: st.macros.map(textToVilMacro), vial_protocol: st.vial.vialProtocol, via_protocol: st.vial.viaProtocol,
+    };
+    const text = JSON.stringify(data).replace('"__UID__"', uidDecimal(st.vial.uid || []));
     const d = new Date(), z = n => String(n).padStart(2, '0');
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url;
-    a.download = 'ogm10-jupiter-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + '.json';
+    a.download = 'ogm10-jupiter-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + '.vil';
     a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     const p = pendingCount();
-    hdrMsg('エクスポートしました' + (p.macros + p.keys ? '（書き込んでいない変更も含みます）' : ''), true);
+    hdrMsg('.vil でエクスポートしました' + (p.macros + p.keys ? '（書き込んでいない変更も含みます）' : ''), true);
   }
   /* Vial の .vil のマクロ（動作の並び）→ この画面の書き方 */
   function vilMacroToText(actions, cu) {
@@ -2303,7 +2323,10 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       else if (kind === 'delay') out += '{WAIT:' + Number(args[0] || 0) + '}';
       else if (kind === 'tap' || kind === 'down' || kind === 'up') {
         const sign = kind === 'down' ? '+' : kind === 'up' ? '-' : '';
-        for (const k of args) out += '{' + sign + C.codeToken(C.keycodeFromText(k, cu)) + '}';
+        for (const k of args) {
+          const kc = typeof k === 'number' ? k : C.keycodeFromText(k, cu);
+          out += '{' + sign + C.codeToken(kc) + '}' + (!sign && kc === 0x28 ? '\n' : '');  /* Enter のあとは見やすいよう改行（送られない） */
+        }
       }
     }
     return out;
@@ -2333,7 +2356,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   async function importAll(file) {
     try {
       await ensureKeys();
-      const parsed = parseAllFile(JSON.parse(await file.text()));
+      const raw = await file.text();
+      const parsed = parseAllFile(JSON.parse(raw));
+      /* .vil に書かれた UID が、つないでいるキーボードと違うときは確認する（桁落ちしないよう文字のまま比べる） */
+      const m = /"uid"\s*:\s*(\d+)/.exec(raw);
+      if (m && st.vial.uid && m[1] !== uidDecimal(st.vial.uid) &&
+          !confirm('このファイルは、別のキーボード用に保存されたものです（UID が違います）。それでも読み込みますか？')) return;
       const p = pendingCount();
       if (p.macros + p.keys && !confirm('書き込んでいない変更が ' + (p.macros + p.keys) + ' 件あります。読み込んだ内容で上書きしますか？')) return;
       let nk = 0;
