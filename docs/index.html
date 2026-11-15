@@ -174,9 +174,13 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .k.enc > div { border-radius: 50%; }
 .menu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 40; width: min(440px, calc(100vw - 48px)); max-height: 340px; overflow: auto; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
 .menu.up { top: auto; bottom: calc(100% + 4px); }
-.menu .mhead { padding: 6px 8px 2px; font-size: 12px; font-weight: 700; color: var(--sub); }
+.menu .msec { --mc: var(--sub); margin-bottom: 4px; border-left: 4px solid var(--mc); border-radius: 6px; background: color-mix(in srgb, var(--mc) 9%, var(--panel)); overflow: hidden; }
+.menu .msec:last-child { margin-bottom: 0; }
+.menu .ms0 { --mc: #c77700; } .menu .ms1 { --mc: #8a4fd0; } .menu .ms2 { --mc: #1a8f96; } .menu .ms3 { --mc: #6b7280; }
+@media (prefers-color-scheme: dark) { .menu .ms0 { --mc: #f0a83c; } .menu .ms1 { --mc: #b085f0; } .menu .ms2 { --mc: #5fd0d6; } .menu .ms3 { --mc: #9aa4b2; } }
+.menu .mhead { position: sticky; top: -4px; z-index: 1; padding: 5px 8px; font-size: 12px; font-weight: 700; color: #fff; background: var(--mc); }
 .menu .mitem { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: 6px; background: none; text-align: left; }
-.menu .mitem:hover, .menu .mitem:focus-visible { background: var(--chip); }
+.menu .mitem:hover, .menu .mitem:focus-visible { background: color-mix(in srgb, var(--mc) 24%, var(--panel)); }
 .menu .mn { font-family: var(--mono); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu .md { color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gt { --gc: #6b7280; }
@@ -466,7 +470,7 @@ const JupiterCore = (() => {
     [0x9E, 'RETN', ['RETURN_2']], [0x9F, 'SEPR', ['SEPARATOR']], [0xA0, 'OUT'], [0xA1, 'OPER'], [0xA2, 'CLAG', ['CLEAR_AGAIN']], [0xA3, 'CRSL', ['CRSEL']], [0xA4, 'EXSL', ['EXSEL']],
     [0xBF, 'CPNL', ['CONTROL_PANEL']], [0xC0, 'ASST', ['ASSISTANT']], [0xC1, 'MCTL', ['MISSION_CONTROL']], [0xC2, 'LPAD', ['LAUNCHPAD']],
     [0xD6, 'BTN6', ['MS_BTN6']], [0xD7, 'BTN7', ['MS_BTN7']], [0xD8, 'BTN8', ['MS_BTN8']],
-    [0x87, 'INT1', ['INTERNATIONAL_1', 'RO'], 'ろ \\ _'], [0x88, 'INT2', ['INTERNATIONAL_2', 'KANA'], 'かな'],
+    [0x87, 'INT1', ['INTERNATIONAL_1', 'RO'], '\\ _'], [0x88, 'INT2', ['INTERNATIONAL_2', 'KANA'], 'かな'],
     [0x89, 'INT3', ['INTERNATIONAL_3', 'JYEN', 'YEN'], '¥ |'], [0x8A, 'INT4', ['INTERNATIONAL_4', 'HENK'], '変換'],
     [0x8B, 'INT5', ['INTERNATIONAL_5', 'MHEN'], '無変換'],
     [0x90, 'LNG1', ['LANG1', 'LANGUAGE_1'], 'かな(Mac)'], [0x91, 'LNG2', ['LANG2', 'LANGUAGE_2'], '英数(Mac)'],
@@ -702,7 +706,7 @@ const JupiterCore = (() => {
   /* ---- キーコードの表示名（レイヤー表示用） ---- */
   const NICE = {
     ENTER: 'Enter', ESC: 'Esc', BSPC: 'BS', TAB: 'Tab', SPACE: 'Space', CAPS: 'Caps', GRV: '半/全',
-    INT1: 'ろ', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', LNG1: 'かな', LNG2: '英数',
+    INT1: '\\', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', LNG1: 'かな', LNG2: '英数',
     LCTL: 'Ctrl', LSFT: 'Shift', LALT: 'Alt', LGUI: 'GUI', RCTL: 'RCtrl', RSFT: 'RShift', RALT: 'RAlt', RGUI: 'RGUI',
     PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
     APP: 'App', MENU: 'Menu', MCTL: 'Mission Ctl', LPAD: 'Launchpad', CPNL: 'コンパネ', ASST: 'アシスタント', KB_MUTE: '消音(KB)', _VOLUP: '音量+(KB)', _VOLDOWN: '音量-(KB)', KB_POWER: '電源(KB)',
@@ -737,7 +741,7 @@ const JupiterCore = (() => {
     if (kc < 0x100) return { main: basicLabel(kc), sub: '', kind: 'basic', shift: shiftLabel(kc) };
     const lo = kc & 0xFF, inner = lo <= 1 ? '' : basicLabel(lo), sh = lo <= 1 ? '' : shiftLabel(lo);
     if (kc < 0x2000) {
-      /* Shift だけとの組み合わせは、実際に出る文字を主表示にする（例: Shift+ろ → _ ） */
+      /* Shift だけとの組み合わせは、実際に出る文字を主表示にする（例: Shift+\ → _ ） */
       if (((kc >> 8) & 0x0F) === 2 && sh) return { main: sh, sub: 'Shift+' + inner, kind: 'mod' };
       return { main: inner, sub: modsLabel(kc >> 8), kind: 'mod' };
     }
@@ -1864,9 +1868,12 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     }
     /* マクロ・専用キー・その他の一覧（項目にカーソルを乗せると説明が出る） */
     const menu = $('kSpecialMenu'); menu.textContent = '';
+    let gi = 0;
     const group = (label, items) => {
       if (!items.length) return;
-      const h = document.createElement('div'); h.className = 'mhead'; h.textContent = label; menu.appendChild(h);
+      /* ジャンルごとに色分けした枠にまとめる */
+      const sec = document.createElement('div'); sec.className = 'msec ms' + (gi++); menu.appendChild(sec);
+      const h = document.createElement('div'); h.className = 'mhead'; h.textContent = label; sec.appendChild(h);
       items.forEach(([value, name, short, desc]) => {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'mitem'; b.dataset.v = value;
         const n = document.createElement('span'); n.className = 'mn'; n.textContent = name;
@@ -1874,7 +1881,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         b.append(n, d);
         if (desc) { b.addEventListener('mouseenter', () => tipShow(b, name, desc, true)); b.addEventListener('mouseleave', () => tipHide(document)); b.addEventListener('focus', () => tipShow(b, name, desc, true)); b.addEventListener('blur', () => tipHide(document)); }
         b.addEventListener('click', () => { keysMenu(false); keysAssignText(value); });
-        menu.appendChild(b);
+        sec.appendChild(b);
       });
     };
     group('マクロ', st.macros.map((src, i) => { const flat = src.replace(/\s+/g, ' '); return ['M' + i, 'M' + i, flat || '（空）', flat ? 'マクロの内容: ' + (flat.length > 200 ? flat.slice(0, 200) + '…' : flat) : 'まだ何も登録されていません。上部の「マクロ」で内容を書けます。']; }));
@@ -2309,7 +2316,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   const VK_LABEL = {
     ESC: 'Esc', GRV: '半/全', BSPC: 'BS', TAB: 'Tab', ENTER: 'Enter', CAPS: 'Caps', SPACE: 'Space',
     LCTL: 'Ctrl', LSFT: 'Shift', LALT: 'Alt', LGUI: 'GUI', RCTL: 'Ctrl', RSFT: 'Shift', RALT: 'Alt', RGUI: 'GUI',
-    INT1: 'ろ', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', APP: 'App', NUHS: ']',
+    INT1: '\\ _', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', APP: 'App', NUHS: ']',
     PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
     MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲',
     BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', LNG2: '英数', LNG1: 'かな', PWR: '電源', SLEP: 'スリープ',
