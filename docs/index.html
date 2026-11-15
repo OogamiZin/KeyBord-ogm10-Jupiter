@@ -312,6 +312,9 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <span id="kStatus" class="hint"></span>
       <span class="grow"></span>
       <span id="kToast"></span>
+      <button id="kCapture" title="オンの間、実際に押したキーの組み合わせを選択中のキーに割り当てます">キー入力モード</button>
+      <label class="hint" style="white-space:nowrap"><input type="checkbox" id="kAdvance" checked> 設定したら次のキーへ進む</label>
+      <button id="kDefault" title="全レイヤーのキー割当とエンコーダーを、ファームウェア（keymap.c）の初期設定に戻します">初期設定に戻す</button>
       <button id="kReload" title="キー割当の書き込んでいない変更を捨てて、キーボードの今の割り当てに戻します">変更破棄</button>
       <button id="kSave" class="wbtn" title="マクロとキー割当の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
     </div>
@@ -327,15 +330,13 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
         <button id="kTrns" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
         <button id="kNo" title="何も送らない">✕ 無効</button>
         <button id="kRevert">このキーを元に戻す</button>
-        <button id="kCapture" title="実際にキーを押して、その組み合わせを割り当てます">キー入力を取り込む</button>
-        <label><input type="checkbox" id="kAdvance" checked> 設定したら次のキーへ進む</label>
       </div>
       <div class="row">
-        <div class="group"><span class="cap">長押しでレイヤー</span><select id="kLtLayer"></select><button id="kLt">足す</button></div>
+        <div class="group"><span class="cap">長押しでレイヤー</span><select id="kLtLayer"></select><button id="kLt">追加設定</button></div>
         <div class="group"><span class="cap">長押しで修飾</span>
           <label><input type="checkbox" id="kmCtl">Ctrl</label><label><input type="checkbox" id="kmSft">Shift</label>
           <label><input type="checkbox" id="kmAlt">Alt</label><label><input type="checkbox" id="kmGui">GUI</label>
-          <button id="kMt">足す</button></div>
+          <button id="kMt">追加設定</button></div>
         <button id="kPlain" title="長押しの設定を外して、タップ側のキーだけにする">長押しを外す</button>
       </div>
       <div class="row">
@@ -1223,6 +1224,8 @@ const JupiterCore = (() => {
       for (let l = 0; l < layers; l++) { out.push([]); for (let i = 0; i < count; i++) { const r = await this.cmd([0xFE, 0x03, l, i]); out[l].push([(r[0] << 8) | r[1], (r[2] << 8) | r[3]]); } }
       return out;
     }
+    /* キー割当とエンコーダーを、ファームウェアに書かれた初期設定に戻す（マクロは変わらない） */
+    async resetKeymap() { await this.cmd([0x06]); }
     async setKeycode(layer, row, col, kc) { await this.cmd([0x05, layer, row, col, kc >> 8, kc & 0xFF]); }
     async setEncoder(layer, idx, dir, kc) { await this.cmd([0xFE, 0x04, layer, idx, dir, kc >> 8, kc & 0xFF]); }
     /* 現在のレイヤー状態（兼、変化通知の申し込み） */
@@ -1312,7 +1315,8 @@ const JupiterCore = (() => {
       this.step = o.step || 10;
       this.writes = 0;
       this.rows = o.rows || 4; this.cols = o.cols || 12;
-      this.keymap = JSON.parse(JSON.stringify(o.keymap || [[]])); this.enc = JSON.parse(JSON.stringify(o.enc || []));  /* 渡された配列を共有しない */
+      this.keymap = JSON.parse(JSON.stringify(o.keymap || [[]])); this.enc = JSON.parse(JSON.stringify(o.enc || []));
+      this.defaults = JSON.stringify([this.keymap, this.enc]);  /* 初期設定に戻すとき用 */  /* 渡された配列を共有しない */
       this.layerSupport = o.layerSupport !== false;
       this.def = o.definition ? xzStore(new TextEncoder().encode(JSON.stringify(o.definition))) : new Uint8Array(0);
       this.ls = 0; this.ds = 1; this.subscribed = false; this.onPush = null;
@@ -1335,6 +1339,7 @@ const JupiterCore = (() => {
         case 0x01: d[1] = 0; d[2] = 9; break;
         case 0x0C: d[1] = this.count; break;
         case 0x05: if (this.keymap[d[1]] && this.keymap[d[1]][d[2]] && d[3] < this.cols) { this.keymap[d[1]][d[2]][d[3]] = (d[4] << 8) | d[5]; this.keyWrites = (this.keyWrites || 0) + 1; } break;
+        case 0x06: { const x = JSON.parse(this.defaults); this.keymap = x[0]; this.enc = x[1]; break; }
         case 0x11: d[1] = this.keymap.length; break;
         case 0x12: {
           const off = (d[1] << 8) | d[2], sz = d[3], per = this.rows * this.cols;
@@ -1486,7 +1491,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('intro').hidden = true; $('modes').hidden = false;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
-    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
+    K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
     $('btnReload').disabled = false;
@@ -1897,6 +1902,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     } catch (e) { $('kStatus').textContent = '読み込みに失敗: ' + e.message; return; }
     if (!K.edit) { K.edit = clone(D.keymap); K.encEdit = clone(D.enc); }
     if (!D.state && D.supported !== false) await dispPoll();  /* 接続先の OS（折りたたむ側）を知るため */
+    /* 最初に開いたときは、接続先の OS の基本レイヤーを選ぶ（Mac ならレイヤー 3） */
+    if (!K.layerInit) { K.layerInit = true; if (connectedOs() === 'Mac' && D.layers > 3) K.layer = 3; }
     const layers = [...Array(D.layers).keys()];
     for (const id of ['kLtLayer', 'kOpLayer']) {
       const sel = $(id), keep = sel.value; sel.textContent = '';
@@ -2146,7 +2153,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     dispWatch();
     if (dev) { try { await dev.close(); } catch (e) { /* 閉じられなくても続ける */ } }
     D.def = null; D.keymap = null; D.enc = null; D.state = null; D.supported = null; D.pin = null; D.trig = false;
-    K.edit = null; K.encEdit = null; K.trig = false;
+    K.edit = null; K.encEdit = null; K.trig = false; K.layerInit = false; K.layer = 0; K.sel = 0;
     ['modes', 'app', 'bar', 'keys', 'disp'].forEach(id => { $(id).hidden = true; });
     $('intro').hidden = false;
     $('status').textContent = '未接続'; $('devName').hidden = true; $('usebar').hidden = true;
@@ -2174,6 +2181,21 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     hdrMsg(parts.join(' ／ '), ok); updateWriteBtn();
   }
   $('btnWrite').addEventListener('click', writeAll);
+  $('kDefault').addEventListener('click', async () => {
+    const v = st.vial; if (!v || !K.edit) return;
+    const n = keysChanges().length;
+    if (!confirm('全レイヤーのキー割当とエンコーダーを、ファームウェアの初期設定に戻します。' + (n ? '書き込んでいない変更 ' + n + ' 件も破棄されます。' : '') +
+      '\nVial で設定したタップダンス・コンボ・キーオーバーライドも初期設定（空）に戻ります。マクロは変わりません。\n元に戻せません。実行しますか？')) return;
+    if (st.capturing) setCapture(false);
+    $('kDefault').disabled = true;
+    try {
+      await v.resetKeymap();
+      await dispLoadKeymap(); K.edit = clone(D.keymap); K.encEdit = clone(D.enc);
+      keysRender(); keysShowSel(); if ($('kTextBox').open) keysTextShow();
+      kToast('初期設定に戻しました', true);
+    } catch (e) { kToast('初期設定に戻せませんでした: ' + e.message, false); }
+    finally { $('kDefault').disabled = false; }
+  });
   $('kReload').addEventListener('click', async () => {
     const n = keysChanges().length;
     if (n && !confirm('キー割当の書き込んでいない変更 ' + n + ' 件を破棄しますか？')) return;
@@ -2342,10 +2364,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   function setCapture(on) {
     st.capturing = on; st.heldMods.clear();
-    for (const b of [$('btnCapture'), $('kCapture')]) {
-      b.classList.toggle('on', on);
-      b.textContent = on ? '取り込み中（クリックで終了）' : 'キー入力を取り込む';
-    }
+    $('btnCapture').classList.toggle('on', on); $('btnCapture').textContent = on ? '取り込み中（クリックで終了）' : 'キー入力を取り込む';
+    $('kCapture').classList.toggle('on', on); $('kCapture').textContent = on ? 'キー入力モード中（クリックで終了）' : 'キー入力モード';
     if (D.mode === 'keys') { if (on) { document.activeElement && document.activeElement.blur(); kToast('キーを押すと、その組み合わせが選択中のキーに割り当てられます', true); } else kToast('', true); return; }
     if (on) { ta.focus(); toast('キーを押すと、その組み合わせが書き込まれます', true); } else toast('', true);
   }
