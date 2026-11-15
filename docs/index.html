@@ -1466,7 +1466,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       [T, T, T, T, T, T, T, 'APP', T, X, 'PGUP', T],
       ['CAPS', T, T, T, T, X, T, T, X, 'HOME', 'PGDN', 'END'],
     ];
-    const mac6 = [['USER3', 'M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', T], Array(12).fill(T), [T, T, T, T, 'USER1', T, T, T, T, X, T, T], Array(12).fill(T)];
+    const mac6 = [['USER3', 'M0', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', T], [T, 'USER5', 'USER6', 'USER4', 'USER7', 'USER8', T, T, T, T, T, T], [T, T, T, T, 'USER1', T, T, T, T, X, T, T], Array(12).fill(T)];
     const none = [Array(12).fill(T), Array(12).fill(T), Array(12).fill(T), Array(12).fill(T)];
     const keymap = [base(false), num, nav, base(true), num, nav, mac6, none].map(l => l.map(r => r.map(x => C.keycodeFromText(x))));
     const e0 = ['WH_L', 'WH_R'].map(x => C.keycodeFromText(x)), e1 = ['VOLD', 'VOLU'].map(x => C.keycodeFromText(x)), tt = [1, 1];
@@ -1562,6 +1562,11 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       { name: 'LAYER_INFO', shortName: 'LyrInfo', title: '接続先の OS で決まる基本レイヤーの説明を英文で入力します（Mac は 3、それ以外は 0）' },
       { name: 'SQL_SELECT_TMP', shortName: 'SQLSel', title: '英数に切り替えてから SQL のひな形（Select * / From / Where 1=1 / Order by 1）を入力し、From の行末にカーソルを置きます' },
       { name: 'LAYER_STATUS', shortName: 'LyrStat', title: '単押し: 今のレイヤーと基本レイヤーを文字で入力します（例: Layer 4 (default 3: macOS)）。押しながら Q W E R T Y U の位置: レイヤー 1〜7 に固定、P の位置: レイヤー 0 に固定。固定中は、押しながらどのキーを押しても解除します' },
+      { name: 'AUTO_CLICK', shortName: 'AutoClk20', title: '押している間、マウスの左クリックを連打します（1 秒に 20 回）' },
+      { name: 'AUTO_CLICK_5', shortName: 'AutoClk5', title: '押している間、マウスの左クリックを連打します（1 秒に 5 回）' },
+      { name: 'AUTO_CLICK_10', shortName: 'AutoClk10', title: '押している間、マウスの左クリックを連打します（1 秒に 10 回）' },
+      { name: 'AUTO_CLICK_30', shortName: 'AutoClk30', title: '押している間、マウスの左クリックを連打します（1 秒に 30 回）' },
+      { name: 'AUTO_CLICK_50', shortName: 'AutoClk50', title: '押している間、マウスの左クリックを連打します（1 秒に 50 回）' },
     ],
     layouts: { keymap: [[{"w":0.75},"0,0",{"x":10.5,"w":0.75},"0,11"],[{"y":-0.75,"x":0.75},"0,1","0,2","0,3","0,4","0,5","0,6","0,7","0,8","0,9","0,10"],["1,0","1,1","1,2","1,3","1,4","1,5","1,6","1,7","1,8","1,9","1,10","1,11"],[{"w":1.5},"2,0","2,1","2,2","2,3","2,4","2,5","2,6","2,7","2,8",{"x":0.5},"2,10","2,11"],["3,0",{"x":0.25},"3,1","3,2",{"x":0.25},"3,3",{"w":1.5},"3,4",{"w":1.5},"3,6","3,7",{"x":0.5},"3,9","3,10","3,11"],[{"y":0.25},"0,0\n\n\n\n\n\n\n\n\ne","0,1\n\n\n\n\n\n\n\n\ne",{"x":8},"1,0\n\n\n\n\n\n\n\n\ne","1,1\n\n\n\n\n\n\n\n\ne"]] },
   };
