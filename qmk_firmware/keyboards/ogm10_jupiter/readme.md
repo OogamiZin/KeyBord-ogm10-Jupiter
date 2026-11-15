@@ -9,6 +9,8 @@
 
 一度書き込んだ後は、左エンコーダーを押しながら接続（Bootmagic）するか、左右のエンコーダーを押し込んだまま Backspace の位置のキーを押しても、ブートローダーに入れます。
 
+左エンコーダーを押し込んだまま右下のキー（レイヤー 0 では →）を押すと、Chrome で[設定ツール](https://oogamizin.github.io/KeyBord.ogm10-Jupiter/)を開きます。
+
 ## Firmware
 
 - QMK / Vial 用のファイルは このフォルダ（`qmk_firmware/keyboards/ogm10_jupiter`） にあります。

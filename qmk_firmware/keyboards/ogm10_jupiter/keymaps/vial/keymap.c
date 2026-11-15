@@ -434,27 +434,28 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
 }
 
 // ---- AUTO_CLICK: 押している間、左クリックを連打する ----
-// auto_click_half (ms) ごとにボタンを押す/離すを切り替える（25ms なら 1 秒に 20 回）。押したキーで速さが決まる
-// AUTO_CLICK = 20 回/秒, AUTO_CLICK_5 / _10 / _30 / _50 = 5 / 10 / 30 / 50 回/秒
-static uint16_t auto_click_half = 25;
-
-static uint16_t auto_click_half_for(uint16_t keycode) {
+// 1 秒あたりの回数は押したキーで決まる: AUTO_CLICK = 20 回, AUTO_CLICK_5 / _10 / _30 / _50 = 5 / 10 / 30 / 50 回
+// 押した瞬間を起点に、n 回目の押す/離すの切り替えを n * 500 / 回数 (ms) 後に行う。
+// 切り替えのたびに起点を取り直さないので、端数（30 回なら 16.67ms）や処理の遅れが積み重ならず、平均がちょうどその回数になる
+static uint8_t auto_click_rate_for(uint16_t keycode) {
     switch (keycode) {
-        case AUTO_CLICK_5:  return 100;
-        case AUTO_CLICK_10: return 50;
-        case AUTO_CLICK_30: return 17;
-        case AUTO_CLICK_50: return 10;
-        default:            return 25;   // AUTO_CLICK
+        case AUTO_CLICK_5:  return 5;
+        case AUTO_CLICK_10: return 10;
+        case AUTO_CLICK_30: return 30;
+        case AUTO_CLICK_50: return 50;
+        default:            return 20;   // AUTO_CLICK
     }
 }
-static bool     auto_click_held = false;
-static bool     auto_click_down = false;
-static uint16_t auto_click_timer = 0;
+static uint8_t  auto_click_rate  = 20;
+static bool     auto_click_held  = false;
+static bool     auto_click_down  = false;
+static uint32_t auto_click_start = 0;
+static uint32_t auto_click_steps = 0;
 
 static void auto_click_task(void) {
     if (!auto_click_held) return;
-    if (timer_elapsed(auto_click_timer) < auto_click_half) return;
-    auto_click_timer = timer_read();
+    if (timer_elapsed32(auto_click_start) < auto_click_steps * 500 / auto_click_rate) return;
+    auto_click_steps++;
     if (auto_click_down) {
         unregister_code(KC_MS_BTN1);
     } else {
@@ -560,9 +561,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case AUTO_CLICK_50:
             auto_click_held = record->event.pressed;
             if (record->event.pressed) {
-                auto_click_half = auto_click_half_for(keycode);
-                auto_click_down = false;
-                auto_click_timer = timer_read() - auto_click_half;   // 押した瞬間に1回目
+                auto_click_rate  = auto_click_rate_for(keycode);
+                auto_click_down  = false;
+                auto_click_start = timer_read32();
+                auto_click_steps = 0;                                  // 0 回目（押した瞬間）にすぐ 1 回目を押す
             } else if (auto_click_down) {
                 unregister_code(KC_MS_BTN1);
                 auto_click_down = false;
