@@ -91,12 +91,7 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 .vkey.mod { background: var(--chip); }
 .vkey.on { background: var(--dirty); border-color: var(--dirty); color: #000; }
 .vkgap { flex: 1 1 0; min-width: 0; }
-#meter { flex: 1; min-width: 180px; }
-#meter .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-#meter .fill { height: 100%; width: 0; background: var(--accent); }
-#meter.over .fill { background: var(--warn); }
-#meter .txt { font-size: 12px; color: var(--sub); }
-#toast { font-size: 13px; }
+#toast { font-size: 13px; flex: 1; min-width: 0; }
 #toast.ok { color: var(--ok); } #toast.ng { color: var(--warn); }
 dialog { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; max-width: 420px; }
 dialog::backdrop { background: rgba(0, 0, 0, .45); }
@@ -408,14 +403,12 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <div class="vkscroll"><div id="vkKeys"></div></div>
   </div>
   <div class="barrow">
-  <div id="meter"><div class="bar"><div class="fill"></div></div><div class="txt"></div></div>
   <span id="toast"></span>
   <button id="btnVk">仮想キーボードを隠す</button>
   <button id="btnExport">バックアップ保存</button>
   <button id="btnImport">バックアップ読込</button>
   <input type="file" id="fileImport" accept="application/json,.json" hidden>
   <button id="btnReload">読み直す</button>
-  <button id="btnSave" class="primary">キーボードに書き込む</button>
   </div>
 </footer>
 
@@ -1394,7 +1387,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     banner('このブラウザは WebHID に対応していないため、キーボードには接続できません。パソコンの Chrome か Edge で開いてください。「デモで試す」は使えます。');
   } else {
     navigator.hid.addEventListener('disconnect', e => {
-      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('usebar').hidden = true; $('btnSave').disabled = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
+      if (st.hid && e.device === st.hid) { st.hid = null; st.vial = null; $('status').textContent = '切断されました'; $('usebar').hidden = true; $('btnReload').disabled = true; dispWatch(); updateHeaderButtons(); }
     });
   }
 
@@ -1461,7 +1454,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
     v.onLayer = s => { D.state = s; D.supported = true; dispRender(); };
     setMode('macro');
-    $('btnSave').disabled = false; $('btnReload').disabled = false;
+    $('btnReload').disabled = false;
     const s = await v.unlockStatus();
     if (s.inProgress) await runUnlock();
     await load();
@@ -2179,10 +2172,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     });
 
     const used = comp.reduce((n, c) => n + c.bytes.length + 1, 0);
-    const m = $('meter');
-    m.classList.toggle('over', used > v.bufSize);
-    m.querySelector('.fill').style.width = Math.min(100, used / v.bufSize * 100) + '%';
-    m.querySelector('.txt').textContent = '使用量 ' + used + ' / ' + v.bufSize + ' バイト' + (used > v.bufSize ? '（超過しています）' : '');
     /* 画面上部: マクロの保存領域の使用量 */
     $('status').textContent = used + ' / ' + v.bufSize + ' Byte';
     $('usebar').firstChild.style.width = Math.min(100, used / v.bufSize * 100) + '%';
@@ -2424,7 +2413,6 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const bad = r.comp.findIndex(c => c.errors.length);
     if (bad >= 0) return done('M' + bad + ' にエラーがあります', false);
     if (r.used > v.bufSize) return done('保存領域を ' + (r.used - v.bufSize) + ' バイト超えています', false);
-    $('btnSave').disabled = true;
     try {
       if (!(await runUnlock())) return done('ロックを解除できませんでした', false);
       const n = await v.writeMacros(C.joinMacros(r.comp.map(c => c.bytes)));
@@ -2432,9 +2420,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       await load();
       return done(n ? '書き込みました' : '変更はありませんでした', true);
     } catch (e) { return done('書き込みに失敗: ' + e.message, false); }
-    finally { $('btnSave').disabled = !st.vial; }
   }
-  $('btnSave').addEventListener('click', () => save());
   $('btnReload').addEventListener('click', async () => {
     if (dirty() && !confirm('未保存の変更を捨てて、キーボードから読み直しますか？')) return;
     try { await load(); toast('読み直しました', true); } catch (e) { toast('読み込みに失敗: ' + e.message, false); }
