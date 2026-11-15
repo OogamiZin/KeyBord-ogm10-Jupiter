@@ -320,7 +320,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <div id="kedit">
       <div class="row">
         <strong id="kSel">キーを選んでください</strong>
-        <input type="text" id="kText" autocomplete="off" spellcheck="false" placeholder="例: LCTL+LSFT+K ／ LT(2,LBRC) ／ MO(1) ／ M0 ／ LCTL(KC_C)">
+        <input type="text" id="kText" autocomplete="off" spellcheck="false" placeholder="例: KC_A ／ LCTL(KC_C) ／ LT(2, KC_LBRC) ／ MO(1) ／ QK_MACRO_0（LCTL+C のような短い書き方も可）">
         <button id="kApply" class="primary">設定</button>
       </div>
       <div class="row">
@@ -783,6 +783,7 @@ const JupiterCore = (() => {
     TILD: 0x235, EXLM: 0x21E, AT: 0x21F, HASH: 0x220, DLR: 0x221, PERC: 0x222, CIRC: 0x223, AMPR: 0x224, ASTR: 0x225,
     LPRN: 0x226, RPRN: 0x227, UNDS: 0x22D, PLUS: 0x22E, LCBR: 0x22F, RCBR: 0x230, PIPE: 0x231, COLN: 0x233, DQUO: 0x234,
     LABK: 0x236, RABK: 0x237, QUES: 0x238, LT: 0x236, GT: 0x237,
+    SC_LCPO: 0x7C18, SC_RCPC: 0x7C19, SC_LSPO: 0x7C1A, SC_RSPC: 0x7C1B, SC_LAPO: 0x7C1C, SC_RAPC: 0x7C1D, SC_SENT: 0x7C1E,
     LCPO: 0x7C18, RCPC: 0x7C19, LSPO: 0x7C1A, RSPC: 0x7C1B, LAPO: 0x7C1C, RAPC: 0x7C1D, SFTENT: 0x7C1E, FN_MO13: 0x7C77, FN_MO23: 0x7C78,
     DYN_REC_START1: 0x7C53, DYN_REC_START2: 0x7C54, DYN_REC_STOP: 0x7C55, DYN_MACRO_PLAY1: 0x7C56, DYN_MACRO_PLAY2: 0x7C57,
   };
@@ -905,6 +906,39 @@ const JupiterCore = (() => {
     if (kc >= 0x7700 && kc < 0x7780) return 'M' + (kc - 0x7700);
     if (kc >= 0x7E00 && kc < 0x7E40) { const n = kc - 0x7E00, cu = custom && custom[n]; return (cu && cu.name) || ('USER' + n); }
     return NAMED_OUT[kc] || hex(kc, 4);
+  }
+
+  /* キーコード → QMK の書き方（KC_A、LCTL(KC_C)、LT(2,KC_LBRC) など）。keycodeFromText で元に戻せる */
+  const QMK_NAMED = { 0x7C00: 'QK_BOOT', 0x7C01: 'QK_REBOOT', 0x7C03: 'QK_CLEAR_EEPROM', 0x7C16: 'QK_GESC', 0x7C53: 'DM_REC1', 0x7C54: 'DM_REC2', 0x7C55: 'DM_RSTP',
+    0x7C56: 'DM_PLY1', 0x7C57: 'DM_PLY2', 0x7C73: 'CW_TOGG', 0x7C79: 'QK_REP', 0x7C18: 'SC_LCPO', 0x7C19: 'SC_RCPC', 0x7C1A: 'SC_LSPO', 0x7C1B: 'SC_RSPC',
+    0x7C1C: 'SC_LAPO', 0x7C1D: 'SC_RAPC', 0x7C1E: 'SC_SENT', 0x7C77: 'FN_MO13', 0x7C78: 'FN_MO23' };
+  function qmkMods(bits) {
+    const side = (bits & 0x10) ? 'MOD_R' : 'MOD_L', n = [];
+    if (bits & 1) n.push(side + 'CTL'); if (bits & 2) n.push(side + 'SFT'); if (bits & 4) n.push(side + 'ALT'); if (bits & 8) n.push(side + 'GUI');
+    return n.join('|');
+  }
+  function keycodeToQmk(kc, custom) {
+    const basic = c => (c === 0 ? 'KC_NO' : c === 1 ? 'KC_TRNS' : keyName(c) ? 'KC_' + keyName(c) : hex(c, 4));
+    if (kc < 0x100) return basic(kc);
+    const lo = kc & 0xFF;
+    if (kc < 0x2000) {
+      const bits = kc >> 8, side = (bits & 0x10) ? 'R' : 'L', fns = [];
+      if (bits & 1) fns.push(side + 'CTL'); if (bits & 2) fns.push(side + 'SFT'); if (bits & 4) fns.push(side + 'ALT'); if (bits & 8) fns.push(side + 'GUI');
+      if (!fns.length) return hex(kc, 4);
+      return fns.reduceRight((inner, f) => f + '(' + inner + ')', basic(lo));
+    }
+    if (kc < 0x4000) { const m = qmkMods((kc >> 8) & 0x1F); return m ? 'MT(' + m + ', ' + basic(lo) + ')' : hex(kc, 4); }
+    if (kc < 0x5000) return 'LT(' + ((kc >> 8) & 0xF) + ', ' + basic(lo) + ')';
+    if (kc < 0x5200) { const m = qmkMods(kc & 0x1F); return m ? 'LM(' + ((kc >> 5) & 0xF) + ', ' + m + ')' : hex(kc, 4); }
+    if (kc < 0x5300) {
+      const g = (kc - 0x5200) >> 5, n = kc & 0x1F;
+      if (g === 5) { const m = qmkMods(n); return m ? 'OSM(' + m + ')' : hex(kc, 4); }
+      return LAYER_OP_NAMES[g] + '(' + n + ')';
+    }
+    if (kc >= 0x5700 && kc < 0x5800) return 'TD(' + (kc & 0xFF) + ')';
+    if (kc >= 0x7700 && kc < 0x7780) return 'QK_MACRO_' + (kc - 0x7700);
+    if (kc >= 0x7E00 && kc < 0x7E40) { const n = kc - 0x7E00, cu = custom && custom[n]; return (cu && cu.name) || ('QK_KB_' + n); }
+    return QMK_NAMED[kc] || hex(kc, 4);
   }
 
   /* 配置に含まれるキーを、行・列の順（keymap.c の LAYOUT と同じ並び）で返す */
@@ -1339,7 +1373,7 @@ const JupiterCore = (() => {
   }
 
   return { KEYS, MAX_WAIT, isMod, keyName, resolveKey, parse, serialize, deserialize, format, compile, codeToken, splitMacros, joinMacros,
-    basicLabel, keyLabel, keycodeFromText, keycodeToText, matrixOrder, layerToText, layerFromText, layerFromVil, parseKle, toDefinition, effective, highestLayer, parseLayerState, crc32, xzDecompress, xzStore, Vial, MockDevice };
+    basicLabel, keyLabel, keycodeFromText, keycodeToText, keycodeToQmk, matrixOrder, layerToText, layerFromText, layerFromVil, parseKle, toDefinition, effective, highestLayer, parseLayerState, crc32, xzDecompress, xzStore, Vial, MockDevice };
 })();
 if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
 </script>
@@ -1955,7 +1989,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (!K.edit) return;
     const k = kKeys()[K.sel];
     $('kSel').textContent = layerLabel(K.layer) + ' ／ ' + (k.enc !== undefined ? 'エンコーダー ' + k.enc + (k.dir ? ' 時計回り' : ' 反時計回り') : '行 ' + k.row + '・列 ' + k.col);
-    $('kText').value = C.keycodeToText(kVal(K.layer, k), D.def.custom);
+    $('kText').value = C.keycodeToQmk(kVal(K.layer, k), D.def.custom);
   }
   function keysAssign(kc, stay) {
     if (!K.edit) return;
