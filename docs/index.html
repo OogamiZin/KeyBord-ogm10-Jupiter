@@ -1837,7 +1837,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
             const g = doc.createElement('span'); g.className = 'gname'; g.textContent = info.group; wrap.appendChild(g);
           } else {
             /* 1 レイヤーだけのまとまり（マクロ・ユーザー）は、番号の横に名前を出して 1 行にする */
-            const n = doc.createElement('span'); n.className = 'lname'; n.textContent = info.group; b.appendChild(n);
+            const n = doc.createElement('span'); n.className = 'lname'; n.textContent = info.group === 'ユーザー' ? 'ﾕｰｻﾞｰ' : info.group; b.appendChild(n);
           }
           box.appendChild(wrap);
         }
@@ -1853,7 +1853,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function addTrigChip(box, doc, on, onClick) {
     if (!trigList()) return;
     const wrap = doc.createElement('span'); wrap.className = 'lgroup gt' + (on ? ' act' : '');
-    const b = doc.createElement('button'); b.className = 'lchip trigchip' + (on ? ' on' : ''); b.textContent = '独自トリガ';
+    const b = doc.createElement('button'); b.className = 'lchip trigchip' + (on ? ' on' : ''); b.textContent = '独自ﾄﾘｶﾞ';
     b.title = 'ファームウェアに組み込んだ特殊な操作の一覧';
     b.addEventListener('click', onClick);
     wrap.appendChild(b); box.appendChild(wrap);
