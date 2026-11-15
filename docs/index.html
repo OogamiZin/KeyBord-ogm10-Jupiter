@@ -2329,7 +2329,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         }
       }
     }
-    return out;
+    return out.replace(/\n+$/, '');
   }
   function parseAllFile(data) {
     const cu = D.def.custom, keys = [], enc = [];
