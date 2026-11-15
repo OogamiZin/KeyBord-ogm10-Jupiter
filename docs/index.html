@@ -80,19 +80,20 @@ td code, p code { font-family: var(--mono); background: var(--chip); padding: 0 
 footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; background: var(--panel); border-top: 1px solid var(--line); }
 .barrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 #vk { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.vkhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: 900px; margin: 0 auto 6px; font-size: 13px; }
+.vkhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: 740px; margin: 0 auto 6px; font-size: 13px; }
 .vkhead label { display: inline-flex; align-items: center; gap: 3px; }
 .vkhead .cap { color: var(--sub); font-size: 12px; }
 .vkscroll { overflow-x: auto; }
-#vkKeys { display: flex; gap: 12px; width: 900px; margin: 0 auto; }
+#vkKeys { display: flex; gap: 10px; width: 740px; margin: 0 auto; }
 /* キー割当のときだけ、仮想キーボードの上に「透過」「無効」の行を出す */
-#vkTop { display: none; gap: 3px; width: 900px; margin: 0 auto 3px; }
+#vkTop { display: none; gap: 3px; width: 740px; margin: 0 auto 3px; }
 #kvk #vkTop { display: flex; }
 #vkTop .vkey { flex: 0 0 auto; width: auto; padding: 0 8px; font-size: 11px; }
 .vkblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .vkrow { display: flex; gap: 3px; height: 28px; }
 .vkey { flex: 1 1 0; min-width: 0; height: 28px; padding: 0 2px; border-radius: 5px; font-size: 11px; line-height: 1; overflow: hidden; white-space: nowrap; background: var(--bg); }
 .vkey.mod { background: var(--chip); }
+.vkey.sm { font-size: 9px; letter-spacing: -0.3px; padding: 0 1px; }
 .vkey { position: relative; }
 .vkey .vs { position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; color: var(--accent); }
 .vkey.on .vs { color: inherit; }
@@ -2601,7 +2602,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     INT1: '\\', INT2: 'かな', INT3: '¥', INT4: '変換', INT5: '無変換', APP: 'App', NUHS: ']',
     PSCR: 'PrtSc', SCRL: 'ScrLk', PAUS: 'Pause', INS: 'Ins', HOME: 'Home', PGUP: 'PgUp', DEL: 'Del', END: 'End', PGDN: 'PgDn',
     MUTE: '消音', VOLD: '音量-', VOLU: '音量+', MPRV: '前の曲', MPLY: '再生', MNXT: '次の曲',
-    BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', LNG2: '英数', LNG1: 'かな', PWR: '電源', SLEP: 'スリープ',
+    BRID: '輝度-', BRIU: '輝度+', CALC: '電卓', LNG2: '英数', LNG1: 'かな', PWR: '電源', SLEP: 'Sleep',
     NUM: 'Num', PSLS: '/', PAST: '*', PMNS: '-', PPLS: '+', PENT: 'Enter', PDOT: '.',
     P0: '0', P1: '1', P2: '2', P3: '3', P4: '4', P5: '5', P6: '6', P7: '7', P8: '8', P9: '9',
   };
@@ -2617,7 +2618,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     ['PSCR', 'SCRL', 'PAUS'], ['INS', 'HOME', 'PGUP'], ['DEL', 'END', 'PGDN'], [3], [1, 'UP', 1], ['LEFT', 'DOWN', 'RIGHT'],
   ];
   const VK_NUM = [
-    ['NUM', 'PPLS', 'PENT'], ['PSLS', 'PAST', 'PMNS'], ['P7', 'P8', 'P9'], ['P4', 'P5', 'P6'], ['P1', 'P2', 'P3'], [['P0', 2], 'PDOT'],
+    ['NUM', 'PENT', 'PPLS'], ['PSLS', 'PAST', 'PMNS'], ['P7', 'P8', 'P9'], ['P4', 'P5', 'P6'], ['P1', 'P2', 'P3'], [['P0', 2], 'PDOT'],
   ];
   const VK_EXTRA = [
     ['MUTE', 'VOLD', 'VOLU'], ['MPRV', 'MPLY', 'MNXT'], ['BRID', 'BRIU', 'CALC'], ['LNG2', 'LNG1', 1], ['F13', 'F14', 'F15'], ['PWR', 'SLEP', 1],
@@ -2654,6 +2655,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
           const mod = MOD_ORDER.includes(name);
           b.type = 'button'; b.className = 'vkey' + (mod ? ' mod' : ''); b.style.flexGrow = w;
           b.textContent = VK_LABEL[name] || (k && k.jis) || name;
+          /* 1 キー幅に収まりにくい長い表示は、文字を小さくする */
+          const lab = b.textContent, len = [...lab].reduce((n, ch) => n + (ch.charCodeAt(0) > 0xFF ? 2 : 1), 0);
+          if (w <= 1 && ((len >= 5 && lab !== '半/全') || ['Home', 'PgUp', 'PgDn'].includes(lab))) b.classList.add('sm');
           const sh = k && !/^P[0-9]$/.test(name) ? C.keyLabel(k.code).shift : '';
           if (sh) { const t = document.createElement('span'); t.className = 'vs'; t.textContent = sh; b.appendChild(t); }
           b.title = '{' + name + '}' + (sh ? '（Shift で ' + sh + '）' : '');
