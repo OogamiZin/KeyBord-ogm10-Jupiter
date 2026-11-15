@@ -19,6 +19,7 @@ RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリ
 ## 設定ツール
 
 Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り当ての変更、今のレイヤーのキー表示ができます。
+
 ようはogm10-Jupiter用にVIALを改造したものです。
 
 **https://oogamizin.github.io/KeyBord.ogm10-Jupiter/**
