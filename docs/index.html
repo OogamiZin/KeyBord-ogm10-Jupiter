@@ -3208,7 +3208,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* ---- デモ用: クリックで動かせる仮想 ogm10-Jupiter ----
      模擬キーボードの割り当て・マクロ・タップダンス・キーオーバーライドを使って、押したときの動きを再現する。
      パソコンには何も送らず、結果は小窓の入力欄に出す。 */
-  const VJ = { open: false, win: null, keys: [], els: [], held: new Map(), latched: new Set(), mods: 0, osm: 0, osl: -1, td: new Map() };
+  const VJ = { kana: false, pend: '', open: false, win: null, keys: [], els: [], held: new Map(), latched: new Set(), mods: 0, osm: 0, osl: -1, td: new Map() };
   const VJ_TERM = 200;
   /* 小窓に移すと document.getElementById では見つからなくなるので、要素は最初に覚えておく */
   const VJE = {}; ['vjBoard', 'vjClear', 'vjClose', 'vjFloat', 'vjHome', 'vjLayer', 'vjLog', 'vjMods', 'vjOut', 'vjPanel'].forEach(id => { VJE[id] = $(id); });
@@ -3242,6 +3242,44 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     return [...lab.main].length === 1 ? lab.main : null;
   }
   /* 基本キー 1 打（修飾つき）。キーオーバーライドもここで適用する */
+  /* かな入力（ローマ字 → ひらがな）。漢字変換はしない */
+  const VJ_KANA = (() => {
+    const t = { a: 'あ', i: 'い', u: 'う', e: 'え', o: 'お', nn: 'ん', xn: 'ん', vu: 'ゔ' };
+    const rows = { k: 'かきくけこ', s: 'さしすせそ', t: 'たちつてと', n: 'なにぬねの', h: 'はひふへほ', m: 'まみむめも', r: 'らりるれろ',
+      g: 'がぎぐげご', z: 'ざじずぜぞ', d: 'だぢづでど', b: 'ばびぶべぼ', p: 'ぱぴぷぺぽ' };
+    for (const [c, k] of Object.entries(rows)) [...'aiueo'].forEach((v, i) => { t[c + v] = k[i]; });
+    Object.assign(t, { ya: 'や', yu: 'ゆ', yo: 'よ', wa: 'わ', wi: 'うぃ', we: 'うぇ', wo: 'を', shi: 'し', chi: 'ち', tsu: 'つ', fu: 'ふ', ji: 'じ',
+      fa: 'ふぁ', fi: 'ふぃ', fe: 'ふぇ', fo: 'ふぉ', ja: 'じゃ', ju: 'じゅ', jo: 'じょ', je: 'じぇ', sha: 'しゃ', shu: 'しゅ', sho: 'しょ', she: 'しぇ',
+      cha: 'ちゃ', chu: 'ちゅ', cho: 'ちょ', che: 'ちぇ', thi: 'てぃ', dhi: 'でぃ', twu: 'とぅ', dwu: 'どぅ', va: 'ゔぁ', vi: 'ゔぃ', ve: 'ゔぇ', vo: 'ゔぉ',
+      xa: 'ぁ', xi: 'ぃ', xu: 'ぅ', xe: 'ぇ', xo: 'ぉ', la: 'ぁ', li: 'ぃ', lu: 'ぅ', le: 'ぇ', lo: 'ぉ', xtu: 'っ', ltu: 'っ',
+      xya: 'ゃ', xyu: 'ゅ', xyo: 'ょ', lya: 'ゃ', lyu: 'ゅ', lyo: 'ょ', xwa: 'ゎ', lwa: 'ゎ', ye: 'いぇ' });
+    const yrow = { ky: 'き', sy: 'し', ty: 'ち', cy: 'ち', ny: 'に', hy: 'ひ', my: 'み', ry: 'り', gy: 'ぎ', zy: 'じ', jy: 'じ', dy: 'ぢ', by: 'び', py: 'ぴ' };
+    for (const [c, k] of Object.entries(yrow)) { t[c + 'a'] = k + 'ゃ'; t[c + 'u'] = k + 'ゅ'; t[c + 'o'] = k + 'ょ'; t[c + 'e'] = k + 'ぇ'; t[c + 'i'] = k + 'ぃ'; }
+    const pre = new Set(); Object.keys(t).forEach(k => { for (let i = 1; i < k.length; i++) pre.add(k.slice(0, i)); });
+    return { t, pre };
+  })();
+  const VJ_KANA_PUNCT = { '-': 'ー', ',': '、', '.': '。', '/': '・', '[': '「', ']': '」' };
+  function vjKanaFinish() {
+    if (!VJ.pend) return;
+    if (VJ.pend === 'n') { const t = VJE.vjOut, p = t.selectionStart; t.setRangeText('ん', p - 1, p, 'end'); }
+    VJ.pend = '';
+  }
+  function vjKanaLetter(c) {
+    const T = VJ_KANA.t, t = VJE.vjOut, pos = t.selectionStart;
+    t.setRangeText('', Math.max(0, pos - VJ.pend.length), pos, 'end');
+    let p = VJ.pend + c, out = '';
+    while (p) {
+      if (T[p]) { out += T[p]; p = ''; break; }
+      if (VJ_KANA.pre.has(p)) break;
+      if (p.length >= 2 && p[0] === 'n' && !'aiueony'.includes(p[1])) { out += 'ん'; p = p.slice(1); continue; }
+      if (p.length >= 2 && p[0] === p[1] && !'aiueon'.includes(p[0])) { out += 'っ'; p = p.slice(1); continue; }
+      let hit = false;
+      for (let L = Math.min(3, p.length); L > 0; L--) if (T[p.slice(0, L)]) { out += T[p.slice(0, L)]; p = p.slice(L); hit = true; break; }
+      if (!hit) { out += p[0]; p = p.slice(1); }
+    }
+    VJ.pend = p; vjText(out + p);
+  }
+  function vjSetKana(on) { vjKanaFinish(); VJ.kana = on; vjLog(on ? 'かな入力にしました' : '英数入力にしました'); }
   function vjTap(kc, mods) {
     const top = vjTop();
     for (const [i, e] of (st.mock.dyn.ko || []).entries()) {
@@ -3256,6 +3294,13 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     }
     const fm = fold4(mods), lab = C.keyLabel(kc, { custom: D.def.custom });
     if (fm & 0x0D) { vjLog(vjModNames(mods).concat([lab.main || C.keycodeToQmk(kc, D.def.custom)]).join('+') + ' を送信'); return; }
+    /* 入力モードの切り替え（かな / 英数 / 半角全角） */
+    if (kc === 0x90 || kc === 0x88) { vjSetKana(true); return; }
+    if (kc === 0x91) { vjSetKana(false); return; }
+    if (kc === 0x35 && !(fm & 0x02)) { vjSetKana(!VJ.kana); return; }
+    if (kc === 0x2A && VJ.pend) { VJ.pend = VJ.pend.slice(0, -1); const t = VJE.vjOut, p = t.selectionStart; t.setRangeText('', p - 1, p, 'end'); return; }
+    if (VJ.kana && kc >= 0x04 && kc <= 0x1D && !(fm & 0x02)) { vjKanaLetter(String.fromCharCode(97 + kc - 4)); return; }
+    vjKanaFinish();
     const t = VJE.vjOut, p = t.selectionStart;
     switch (kc) {
       case 0x2A: if (t.selectionEnd > p) t.setRangeText('', p, t.selectionEnd, 'end'); else if (p > 0) t.setRangeText('', p - 1, p, 'end'); return;
@@ -3266,7 +3311,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       case 0x4D: { let e = t.value.indexOf('\n', p); if (e < 0) e = t.value.length; t.selectionStart = t.selectionEnd = e; return; }
     }
     const ch = vjChar(kc, !!(fm & 0x02));
-    if (ch !== null) vjText(ch); else vjLog((lab.main || C.keycodeToQmk(kc, D.def.custom)) + (lab.sub ? '（' + lab.sub + '）' : '') + ' を送信');
+    if (ch !== null) vjText(VJ.kana && VJ_KANA_PUNCT[ch] ? VJ_KANA_PUNCT[ch] : ch); else vjLog((lab.main || C.keycodeToQmk(kc, D.def.custom)) + (lab.sub ? '（' + lab.sub + '）' : '') + ' を送信');
   }
   /* 普通のキーを打ったあと: 次の1打だけの修飾・レイヤーを解除する */
   function vjAfterKey() {
@@ -3393,7 +3438,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   function vjUpdate() {
     if (!VJ.open || !st.mock || !D.def) return;
     const top = vjTop(), ctx = { macros: st.macros, custom: D.def.custom };
-    VJE.vjLayer.textContent = layerLabel(top);
+    VJE.vjLayer.textContent = layerLabel(top) + ' ／ 入力: ' + (VJ.kana ? 'あ（かな）' : 'A（英数）');
     const mn = vjModNames(vjMods()); VJE.vjMods.textContent = (mn.length ? mn.join('+') : '') + (VJ.osl >= 0 ? ' 次の1打: レイヤー ' + VJ.osl : '');
     VJ.keys.forEach((k, i) => {
       const el = VJ.els[i], h = VJ.held.get(i), kc = h ? h.kc : vjKc(k), lab = C.keyLabel(kc, ctx);
@@ -3432,7 +3477,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   }
   $('btnVj').addEventListener('click', vjOpen);
   VJE.vjClose.addEventListener('click', vjClose);
-  VJE.vjClear.addEventListener('click', () => { VJE.vjOut.value = ''; vjLog(''); });
+  VJE.vjClear.addEventListener('click', () => { VJE.vjOut.value = ''; VJ.pend = ''; vjLog(''); });
 
   window.addEventListener('beforeunload', e => { if (st.vial && (dirty() || keysChanges().length || dynChanges().length)) { e.preventDefault(); e.returnValue = ''; } });
   $('btnConnect').addEventListener('click', () => (st.vial ? endSession() : connect()));
