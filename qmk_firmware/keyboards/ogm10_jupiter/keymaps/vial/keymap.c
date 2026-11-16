@@ -215,7 +215,21 @@ const vial_combo_entry_t PROGMEM default_combo_entries[] = {
 
 // Macro buffer
 const uint8_t PROGMEM default_macro_buffer[] = {
-    
+    // M0: 英数に切り替えて SQL のひな形を入力し、From の行末へ戻る（68 バイト）
+    //   {LNG2}Select *{ENTER}From {ENTER}Where 1=1{ENTER}Order by 1{ENTER}{LEFT}x5{UP}x2
+    // 0x01 0x01 <kc> = キーを1回押す（kc: 0x91 英数 / 0x28 Enter / 0x50 ← / 0x52 ↑）、文字はそのまま入力
+    0x01, 0x01, 0x91,   // 英数
+    'S', 'e', 'l', 'e', 'c', 't', ' ', '*',
+    0x01, 0x01, 0x28,   // Enter
+    'F', 'r', 'o', 'm', ' ',
+    0x01, 0x01, 0x28,   // Enter
+    'W', 'h', 'e', 'r', 'e', ' ', '1', '=', '1',
+    0x01, 0x01, 0x28,   // Enter
+    'O', 'r', 'd', 'e', 'r', ' ', 'b', 'y', ' ', '1',
+    0x01, 0x01, 0x28,   // Enter
+    0x01, 0x01, 0x50, 0x01, 0x01, 0x50, 0x01, 0x01, 0x50, 0x01, 0x01, 0x50, 0x01, 0x01, 0x50,   // ← x5
+    0x01, 0x01, 0x52, 0x01, 0x01, 0x52,   // ↑ x2
+    0x00,   // M0 の終わり（M1 以降は空）
 };
 
 // Key Override definitions
