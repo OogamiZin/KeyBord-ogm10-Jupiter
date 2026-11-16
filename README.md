@@ -2,6 +2,8 @@
 
 RP2040 と USB ハブ（CH334F）を基板に載せた、43キー + ロータリーエンコーダー 2個の一体型キーボード
 
+![組み立てた ogm10-Jupiter（上）と基板の裏面（下）](images/ogm10-Jupiter-photo.jpg)
+
 ## Specs
 
 | 項目 | 内容 |
@@ -36,6 +38,7 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 | ファームウェア：書き込み方法、ビルド、Vial | [qmk_firmware/keyboards/ogm10_jupiter/readme.md](qmk_firmware/keyboards/ogm10_jupiter/readme.md) |
 | ノブ：選び方、ファイル一覧、印刷のコツ | [knob/README.md](knob/README.md) |
 | 設定ツール：使い方、できること、制約 | [docs/README.md](docs/README.md) |
+| バンパーケース：足・前後ガード・縦置きスタンドの 3D データ、取り付け方 | [bumper-case/README.md](bumper-case/README.md) |
 
 ## 自分で用意するもの
 
@@ -93,6 +96,8 @@ M2×3mm スペーサー
 | `plate/ogm10-Jupiter-bottom-plate.json` | ボトムプレート（EasyEDA Standard ソース） |
 | `qmk_firmware/` | QMK / Vial ファームウェア |
 | `knob/` | ロータリーエンコーダー用ノブ（STL / FreeCAD マクロ） |
+| `bumper-case/` | バンパーケース（足・前後ガード・縦置きスタンドの STL / 生成スクリプト） |
+| `images/` | 写真 |
 | `docs/` | 設定ツール（GitHub Pages で公開しているページ） |
 
 EasyEDA Standard の「ファイル > 開く > EasyEDA ソース」で各 JSON を読み込めます。
