@@ -274,7 +274,7 @@ const vial_key_override_entry_t default_key_override_entries[] = {
 };
 #endif
 
-// マクロの初期設定（EEPROM の初期化時と、マクロのリセット時に書き込む）
+// マクロの初期設定（EEPROM の初期化時に書き込む。マクロだけのリセットでは空のまま）
 // 形式は Vial のマクロ（設定ツール・Vial が書き込むのと同じバイト列）。マクロ同士は 0x00 で区切る。
 //   M0: Select *{ENTER}From {ENTER}Where 1 = 1{ENTER}Order by 1{ENTER};{LEFT}{UP*3}{RIGHT*5}
 static const uint8_t default_macros[] = {
@@ -286,11 +286,26 @@ static const uint8_t default_macros[] = {
     0x4f, 0x01, 0x01, 0x4f, 0x01, 0x01, 0x4f, 0x01, 0x01, 0x4f, 0x00,
 };
 
-void __real_dynamic_keymap_macro_reset(void);
-void __wrap_dynamic_keymap_macro_reset(void) {
-    __real_dynamic_keymap_macro_reset();  // 全体を 0（空）にしてから初期設定を書く
+// EEPROM が初期化されたときに、マクロの初期設定を書き込む。
+// （LTO を使っているため -Wl,-wrap では dynamic_keymap_macro_reset を差し替えられない。初期化のフックで書く）
+static bool jup_macro_defaults_pending = false;
+static void jup_write_default_macros(void) {
     if (sizeof(default_macros) <= dynamic_keymap_macro_get_buffer_size()) {
         dynamic_keymap_macro_set_buffer(0, sizeof(default_macros), (uint8_t *)default_macros);
+    }
+}
+// EEPROM 全体の初期化（VIA の初期化でマクロが空になったあとに呼ばれる）
+void eeconfig_init_user(void) {
+    jup_write_default_macros();
+}
+// VIA の設定が無効（初回やキーボード定義が変わったとき）なら、この直後にマクロが空にされるので、起動後に書く
+void via_init_kb(void) {
+    if (!via_eeprom_is_valid()) jup_macro_defaults_pending = true;
+}
+void keyboard_post_init_user(void) {
+    if (jup_macro_defaults_pending) {
+        jup_macro_defaults_pending = false;
+        jup_write_default_macros();
     }
 }
 
