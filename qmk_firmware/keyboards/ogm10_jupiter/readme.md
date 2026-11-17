@@ -30,3 +30,8 @@
 ## Build workflow
 
 ファームウェアのビルドには [sekigon-gonnoc/vial-keymap-c-editor](https://github.com/sekigon-gonnoc/vial-keymap-c-editor) の再利用可能ワークフローを使っています。
+
+## ファームウェアの版と公開
+
+- 独自コマンド `[0xF7, 0x05]` に、ビルド日時の文字列（例 `Nov 18 2026 07:05:00`）を返します。ファームウェア内には `JUPFW:` に続けて埋め込んであります。
+- main へのプッシュでビルドされたファームウェアは、GitHub Actions の publish ジョブが `docs/firmware/ogm10_jupiter_vial.uf2` と `latest.json` に公開します。設定ツールの「ファーム」から、この版に更新できます。

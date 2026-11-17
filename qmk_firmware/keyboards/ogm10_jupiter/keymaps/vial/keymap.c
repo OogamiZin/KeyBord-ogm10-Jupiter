@@ -686,13 +686,21 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record) {
 //   キーボード -> PC: [0xF7, 0x03, 位置(上位), 位置(下位), その位置から 14 キーぶんの初期キーコード（各 2 バイト、上位が先）]
 //   PC -> キーボード: [0xF7, 0x04, レイヤー, エンコーダー番号]
 //   キーボード -> PC: [0xF7, 0x04, レイヤー, エンコーダー番号, 反時計回り(2 バイト), 時計回り(2 バイト)]
+//   PC -> キーボード: [0xF7, 0x05]
+//   キーボード -> PC: [0xF7, 0x05, ビルド日時の文字列（例 "Nov 18 2026 07:05:00"、0 終端）]
+//   ※ 設定ツールはこの文字列と、GitHub Pages に公開した最新版（docs/firmware/latest.json）を比べて更新の有無を出す。
+//     公開する側（.github/scripts/publish_fw.py）は、.uf2 の中の "JUPFW:" に続く文字列を同じ版として読み取る。
 #define JUP_HID_ID            0xF7
 #define JUP_HID_GET           0x01
 #define JUP_HID_PUSH          0x02
 #define JUP_HID_DEFAULT_KEYS  0x03
 #define JUP_HID_DEFAULT_ENC   0x04
+#define JUP_HID_FW_BUILD      0x05
 #define JUP_HID_VERSION       1
 #define JUP_HID_SUBSCRIBE_MS  3000
+
+// ファームウェアの版（ビルド日時）。先頭の "JUPFW:" は .uf2 から版を探すための目印
+static const char jup_fw_build[] = "JUPFW:" __DATE__ " " __TIME__;
 
 static bool     jup_hid_subscribed   = false;
 static uint32_t jup_hid_sub_timer    = 0;
@@ -740,6 +748,13 @@ void raw_hid_receive_kb(uint8_t *data, uint8_t length) {
             data[4 + i * 2] = kc >> 8;
             data[5 + i * 2] = kc & 0xFF;
         }
+        return;
+    }
+    if (length >= 32 && data[0] == JUP_HID_ID && data[1] == JUP_HID_FW_BUILD) {
+        const char *v = jup_fw_build + 6;  // "JUPFW:" を飛ばす
+        uint8_t i = 0;
+        for (; v[i] && i < 29; i++) data[2 + i] = (uint8_t)v[i];
+        for (; i < 30; i++) data[2 + i] = 0;
         return;
     }
 #ifdef ENCODER_MAP_ENABLE
