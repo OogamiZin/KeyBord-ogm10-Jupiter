@@ -49,6 +49,8 @@ input[type=text], input[type=number] { font: inherit; color: var(--ink); backgro
 #banner { margin: 12px 16px 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
 #intro { max-width: 760px; margin: 28px auto; padding: 0 16px; color: var(--sub); }
 #intro p { margin: 0 0 10px; }
+#intro .replink { margin-top: 14px; font-size: 14px; }
+#intro .replink a { color: var(--accent); font-weight: 600; }
 #intro ul { margin: 0 0 12px; padding-left: 1.4em; }
 #intro li { margin: 0 0 6px; }
 #intro b { color: var(--fg, inherit); }
@@ -353,6 +355,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <li><b>レイヤ監視</b>: 今効いているレイヤーの割り当てを表示します。小窓にして、他のアプリの上に浮かせられます。</li>
   </ul>
   <p>変更は右上の「書込」でまとめてキーボードに書き込みます。「エクスポート」「インポート」で、設定全体を Vial 互換ファイル(.vil)に保存・読み込みできます。<br>キーボードが手元にない場合は「デモで試す」で、模擬キーボードを相手に一通りの操作を試せます。</p>
+  <p class="replink">GitHub リポジトリ: <a href="https://github.com/OogamiZin/KeyBord.ogm10-Jupiter" target="_blank" rel="noopener">OogamiZin/KeyBord.ogm10-Jupiter</a>（キーボードの設計・ファームウェア・この設定ツール）</p>
 </div>
 
 <main id="app" hidden>
