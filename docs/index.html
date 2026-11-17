@@ -3530,7 +3530,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
      キーボードを Vial のブートローダー命令で書き込みモードにし、RPI-RP2 ドライブへ .uf2 を書き込む。 */
   const FW = { cur: undefined, latest: null, data: null, flashing: false };
   const FW_BASE = './firmware/';
-  const fwTime = v => { const t = Date.parse(v); return Number.isNaN(t) ? null : t; };
+  /* GitHub Actions は UTC でビルドするので、ビルド日時は UTC として読む */
+  const fwTime = v => { const t = Date.parse(v + ' UTC'); return Number.isNaN(t) ? null : t; };
   function fwStatus() {
     const c = FW.cur, l = FW.latest && FW.latest.version;
     if (!l) return { upd: false, msg: '公開中の最新版を確認できませんでした。' };
