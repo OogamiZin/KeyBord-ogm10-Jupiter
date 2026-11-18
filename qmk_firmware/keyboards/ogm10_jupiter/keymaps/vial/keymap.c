@@ -821,6 +821,31 @@ static void jup_hid_task(void) {
     }
 }
 
+// ---- Vial のロック解除を早くする ----
+// Vial 本体の解除は 50 回の確認（1 回 0.1 秒以上）が必要で 5〜10 秒かかる。
+// 解除の確認中に Q と P の位置（VIAL_UNLOCK_COMBO と同じ）を FAST_UNLOCK_MS 押し続けたら、その時点で解除済みにする。
+// Vial の画面は次の問い合わせで「解除済み」を受け取って閉じる
+extern int vial_unlocked;
+extern int vial_unlock_in_progress;
+#define FAST_UNLOCK_MS 1000
+static bool     fast_unlock_holding = false;
+static uint16_t fast_unlock_timer = 0;
+
+static void fast_unlock_task(void) {
+    if (!vial_unlock_in_progress || !(matrix_is_on(0, 1) && matrix_is_on(0, 10))) {
+        fast_unlock_holding = false;
+        return;
+    }
+    if (!fast_unlock_holding) {
+        fast_unlock_holding = true;
+        fast_unlock_timer = timer_read();
+    } else if (timer_elapsed(fast_unlock_timer) >= FAST_UNLOCK_MS) {
+        vial_unlocked = 1;
+        vial_unlock_in_progress = 0;
+        fast_unlock_holding = false;
+    }
+}
+
 // 接続先OSに応じてデフォルトレイヤーを切り替える
 // Mac(macOS / iOS) -> レイヤー3、それ以外 -> レイヤー0
 void housekeeping_task_user(void) {
@@ -839,6 +864,7 @@ void housekeeping_task_user(void) {
         }
     }
     auto_click_task();
+    fast_unlock_task();
     jup_hid_task();
 }
 
