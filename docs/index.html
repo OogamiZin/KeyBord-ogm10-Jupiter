@@ -88,7 +88,7 @@ td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: left; vert
 td code, p code { font-family: var(--mono); background: var(--chip); padding: 0 4px; border-radius: 4px; }
 footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; background: var(--panel); border-top: 1px solid var(--line); }
 .barrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-#vk { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+#vk { margin-bottom: 0; padding-bottom: 4px; }
 .vkhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; max-width: 740px; margin: 0 auto 6px; font-size: 13px; }
 .vkhead label { display: inline-flex; align-items: center; gap: 3px; }
 .vkhead .cap { color: var(--sub); font-size: 12px; }
@@ -101,7 +101,7 @@ body.vkkeys #vkTop { display: flex; }
 body.vkfix .vkhead, body.vkfix #toast { display: none; }
 #vk { position: relative; }
 #vkHideBtn { position: absolute; top: 0; right: 0; padding: 2px 10px; font-size: 12px; z-index: 1; }
-body.vkfix #vk:not([hidden]) ~ .barrow { display: none; }
+#vk:not([hidden]) ~ .barrow { display: none; }
 .barrow:empty { display: none; }
 #mVilBox { flex-basis: 100%; }
 #mVilBox select { max-width: 420px; }
