@@ -2184,6 +2184,24 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     return out;
   }
   /* 「一覧から選ぶ」の中身を作る（キー割当と拡張で共有） */
+  /* 仮想キーボード横のボタンの説明 */
+  function vkTipText(value, name, short, desc) {
+    let m = /^M(\d+)$/.exec(value);
+    if (m) {
+      const i = Number(m[1]), src = st.macros[i] || '';
+      if (!src) return [name, '（空）\nマクロの内容は「マクロ」タブで設定します。'];
+      const body = src.length > 600 ? src.slice(0, 600) + '…' : src;
+      return [name + '（' + C.compile(src).bytes.length + ' バイト）', body];
+    }
+    m = /^TD\((\d+)\)$/.exec(value);
+    if (m) {
+      const i = Number(m[1]), e = X.cur && X.cur.td[i];
+      if (!e) return [name, '内容は上部の「拡張」で設定します。'];
+      const lines = TD_FIELDS.map((f, k) => f + ': ' + (e[k] ? xShort(e[k]) + '（' + C.keycodeToQmk(e[k], D.def ? D.def.custom : []) + '）' : 'なし'));
+      return ['タップダンス ' + i, lines.join('\n') + '\n判定時間: ' + e[4] + ' ms'];
+    }
+    return [name, short + (desc ? '\n' + desc : '')];
+  }
   function buildSpecialMenu() {
     /* マクロ・専用キー・その他の一覧（項目にカーソルを乗せると説明が出る） */
     const menu = $('kSpecialMenu'); menu.textContent = '';
@@ -2209,7 +2227,9 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
           let lab = VK_SHORT[value] || name;
           if (!VK_SHORT[value] && /^KC_/.test(value)) { try { const l = C.keyLabel(C.keycodeFromText(value, [])); lab = l.main || name; } catch (e) { /* 名前のまま */ } }
           b.textContent = lab.replace(/^TD\((\d+)\)$/, 'TD$1');
-          b.title = name + ': ' + short + (desc ? '\n' + desc : '');
+          /* カーソルを乗せたら、その時点の内容を出す（マクロ・タップダンスは設定内容） */
+          b.addEventListener('mouseenter', () => { const t = vkTipText(value, name, short, desc); tipShow(b, t[0], t[1]); });
+          b.addEventListener('mouseleave', () => tipHide(document));
           b.addEventListener('mousedown', e => e.preventDefault());  /* 編集欄のカーソルを保つ */
           b.addEventListener('click', () => {
             if (D.mode === 'macro') { macroInsertKey(value); return; }
