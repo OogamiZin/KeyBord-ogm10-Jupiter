@@ -544,6 +544,26 @@ static void open_config_tool(void) {
     }
     tap_code(KC_ENTER);
 }
+// ---- DM_PLY1 / DM_PLY2 キーを「Ctrl・Shift・@ + L」と同じ動きにそろえる ----
+//   押したとき: 記録中なら記録を止める（記録していなければ何もしない）
+//   離したとき: 再生する。再生中は dm_in_playback を立てるので、Alt(Cmd)+Tab のあとの待ちも入る
+// Dynamic Macro の処理は process_record_user より先に動くので、その前の段階（pre_process）で横取りする
+bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (!dm_in_playback && (keycode == DM_PLY1 || keycode == DM_PLY2)) {
+        if (record->event.pressed) {
+            process_dynamic_macro(DM_RSTP, record);   // 記録中なら停止
+        } else {
+            dm_alt_tab_pending = false;
+            dm_in_playback     = true;
+            process_dynamic_macro(keycode, record);   // 離したときに再生
+            dm_in_playback     = false;
+            dm_alt_tab_pending = false;
+        }
+        return false;                                 // PC には送らない
+    }
+    return true;
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // 左ノブ押し込み + 右ノブ押し込み + Backspace（いずれも物理位置: [0,0] [0,11] [1,11]）の3つ同時押しで
     // ブートローダー（QK_BOOT）に入る。マトリクスを直接見るので、レイヤーやキー割り当てに関係なく動く
