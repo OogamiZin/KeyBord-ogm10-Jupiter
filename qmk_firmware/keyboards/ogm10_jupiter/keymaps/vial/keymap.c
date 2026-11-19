@@ -26,6 +26,9 @@ enum custom_keycodes {
     AUTO_CLICK_10,       // 同（1 秒に 10 回）
     AUTO_CLICK_30,       // 同（1 秒に 30 回）
     AUTO_CLICK_50,       // 同（1 秒に 50 回）
+    AUTO_CLICK_100,      // 同（1 秒に 100 回）
+    AUTO_CLICK_200,      // 同（1 秒に 200 回）
+    AUTO_CLICK_500,      // 同（1 秒に 500 回: USB の 1ms ごとの送信で出せる上限）
 };
 /* USER INCLUDE END */
 
@@ -485,19 +488,22 @@ static bool layer_key_combo_process(uint16_t keycode, keyrecord_t *record) {
 }
 
 // ---- AUTO_CLICK: 押している間、左クリックを連打する ----
-// 1 秒あたりの回数は押したキーで決まる: AUTO_CLICK = 20 回, AUTO_CLICK_5 / _10 / _30 / _50 = 5 / 10 / 30 / 50 回
+// 1 秒あたりの回数は押したキーで決まる: AUTO_CLICK = 20 回, AUTO_CLICK_5 / _10 / _30 / _50 / _100 / _200 / _500 = 5 / 10 / 30 / 50 / 100 / 200 / 500 回
 // 押した瞬間を起点に、n 回目の押す/離すの切り替えを n * 500 / 回数 (ms) 後に行う。
 // 切り替えのたびに起点を取り直さないので、端数（30 回なら 16.67ms）や処理の遅れが積み重ならず、平均がちょうどその回数になる
-static uint8_t auto_click_rate_for(uint16_t keycode) {
+static uint16_t auto_click_rate_for(uint16_t keycode) {
     switch (keycode) {
         case AUTO_CLICK_5:  return 5;
         case AUTO_CLICK_10: return 10;
         case AUTO_CLICK_30: return 30;
         case AUTO_CLICK_50: return 50;
+        case AUTO_CLICK_100: return 100;
+        case AUTO_CLICK_200: return 200;
+        case AUTO_CLICK_500: return 500;   // 1ms ごとに押す/離すを切り替える（USB の送信間隔 1ms が上限）
         default:            return 20;   // AUTO_CLICK
     }
 }
-static uint8_t  auto_click_rate  = 20;
+static uint16_t auto_click_rate  = 20;
 static bool     auto_click_held  = false;
 static bool     auto_click_down  = false;
 static uint32_t auto_click_start = 0;
@@ -630,6 +636,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case AUTO_CLICK_10:
         case AUTO_CLICK_30:
         case AUTO_CLICK_50:
+        case AUTO_CLICK_100:
+        case AUTO_CLICK_200:
+        case AUTO_CLICK_500:
             auto_click_held = record->event.pressed;
             if (record->event.pressed) {
                 auto_click_rate  = auto_click_rate_for(keycode);

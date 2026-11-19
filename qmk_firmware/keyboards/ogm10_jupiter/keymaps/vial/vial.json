@@ -48,6 +48,21 @@
       "name": "AUTO_CLICK_50",
       "title": "押している間、マウスの左クリックを連打します（1 秒に 50 回）",
       "shortName": "AutoClk50"
+    },
+    {
+      "name": "AUTO_CLICK_100",
+      "title": "押している間、マウスの左クリックを連打します（1 秒に 100 回）",
+      "shortName": "AutoClk100"
+    },
+    {
+      "name": "AUTO_CLICK_200",
+      "title": "押している間、マウスの左クリックを連打します（1 秒に 200 回）",
+      "shortName": "AutoClk200"
+    },
+    {
+      "name": "AUTO_CLICK_500",
+      "title": "押している間、マウスの左クリックを連打します（1 秒に 500 回）。USB の送信間隔（1ms）で出せる上限です",
+      "shortName": "AutoClk500"
     }
   ],
   "matrix": {
