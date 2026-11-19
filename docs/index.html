@@ -25,7 +25,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.6 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
 h1 { font-size: 16px; margin: 0; font-weight: 650; }
 h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
 h2 { font-size: 14px; margin: 0; }
@@ -134,8 +134,10 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 #btnFw.fwbtn.upd { background: #e8590c; }
 #btnFw.fwbtn.upd::after { content: ' ●'; }
 progress { width: 100%; height: 12px; }
-#modes { display: flex; gap: 4px; }
-#modes button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+#modes, #modes2 { display: flex; gap: 4px; }
+.hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.hrow[hidden], #modes2[hidden] { display: none; }
+#modes button.on, #modes2 button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 #disp { padding: 12px 16px 24px; }
 #dispBody { max-width: 1226px; margin: 0 auto; }
 /* レイヤーの一覧は左の列に縦に並べる */
@@ -329,27 +331,33 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 </head>
 <body>
 <header>
-  <nav id="modes" hidden>
-    <button id="tabMacro" class="on">マクロ</button>
-    <button id="tabKeys">キー割当</button>
-    <button id="tabExt">拡張</button>
-    <button id="tabDisp">レイヤ監視</button>
-    <button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button>
-  </nav>
-  <div class="conn">
-    <button id="btnVj" class="vjbtn" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">⌨ 仮想キーボード起動</button>
-    <div id="devbox">
-      <div id="devName" hidden></div>
-      <div id="status">未接続</div>
-      <div id="usebar" hidden><div></div></div>
+  <div class="hrow" id="hdrTop">
+    <nav id="modes2" hidden><button id="tabDisp">レイヤ監視</button></nav>
+    <div class="conn">
+      <div id="devbox">
+        <div id="devName" hidden></div>
+        <div id="status">未接続</div>
+        <div id="usebar" hidden><div></div></div>
+      </div>
+      <button id="btnConnect" class="primary">キーボードに接続</button>
+      <button id="btnDemo">デモで試す</button>
     </div>
-    <span id="hdrMsg" hidden></span>
-    <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、Vial と同じ .vil 形式で保存します">エクスポート</button>
-    <button id="btnImport2" hidden title=".vil（Vial やこのツールで保存したもの）から、全体の設定を読み込みます">インポート</button>
-    <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
-    <button id="btnConnect" class="primary">キーボードに接続</button>
-    <button id="btnDemo">デモで試す</button>
-    <button id="btnWrite" class="wbtn" hidden title="マクロ・キー割当・拡張（タップダンスなど）の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
+  </div>
+  <div class="hrow" id="hdrRow2" hidden>
+    <nav id="modes" hidden>
+      <button id="tabMacro" class="on">マクロ</button>
+      <button id="tabKeys">キー割当</button>
+      <button id="tabExt">拡張</button>
+      <button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button>
+    </nav>
+    <div class="conn">
+      <button id="btnVj" class="vjbtn" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">⌨ 仮想キーボード起動</button>
+      <span id="hdrMsg" hidden></span>
+      <button id="btnExport2" hidden title="全レイヤーのキー割当・エンコーダー・マクロを、Vial と同じ .vil 形式で保存します">エクスポート</button>
+      <button id="btnImport2" hidden title=".vil（Vial やこのツールで保存したもの）から、全体の設定を読み込みます">インポート</button>
+      <input type="file" id="fileAll" accept=".json,.vil,application/json" hidden>
+      <button id="btnWrite" class="wbtn" hidden title="マクロ・キー割当・拡張（タップダンスなど）の、まだ書き込んでいない変更をまとめてキーボードに書き込みます">書込</button>
+    </div>
   </div>
 </header>
 <div id="banner" hidden></div>
@@ -1767,7 +1775,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     $('devName').title = name + '（マクロ ' + v.macroCount + ' 個）';
     $('status').textContent = '- / ' + v.bufSize + ' Byte';
     $('usebar').hidden = false;
-    $('intro').hidden = true; $('modes').hidden = false;
+    $('intro').hidden = true; $('modes').hidden = false; $('modes2').hidden = false;
     updateHeaderButtons();
     D.def = null; D.keymap = null; D.state = null; D.supported = null; D.pin = null;
     K.edit = null; K.encEdit = null; K.layer = 0; K.sel = 0; K.vil = null; K.trig = false; K.layerInit = false; K.defaults = null; D.trig = false; Object.keys(FOLD).forEach(k => delete FOLD[k]);
@@ -2730,6 +2738,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
   /* 接続中（デモを含む）は「キーボードに接続」を「解除」に、「デモで試す」を「書込」に替える */
   function updateHeaderButtons() {
     const on = !!st.vial;
+    $('hdrRow2').hidden = !on;
     $('btnDemo').hidden = on; $('btnWrite').hidden = !on; $('btnFw').hidden = !on; $('btnVj').hidden = !(on && st.demo); $('btnExport2').hidden = !on; $('btnImport2').hidden = !on;
     const c = $('btnConnect');
     c.textContent = on ? '接続解除' : 'キーボードに接続';
@@ -2758,7 +2767,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     D.def = null; D.keymap = null; D.enc = null; D.state = null; D.supported = null; D.pin = null; D.trig = false;
     X.base = null; X.cur = null; X.n = null; X.unsupported = false; X.sel = null;
     K.edit = null; K.encEdit = null; K.trig = false; K.layerInit = false; K.layer = 0; K.sel = 0;
-    ['modes', 'app', 'bar', 'keys', 'disp', 'ext'].forEach(id => { $(id).hidden = true; });
+    ['modes', 'modes2', 'app', 'bar', 'keys', 'disp', 'ext'].forEach(id => { $(id).hidden = true; });
     $('intro').hidden = false;
     $('status').textContent = '未接続'; $('devName').hidden = true; $('usebar').hidden = true;
     tipHide(document); banner('');
