@@ -25,7 +25,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.6 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
-header { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header { display: flex; flex-direction: column; gap: 5px; padding: 6px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
 h1 { font-size: 16px; margin: 0; font-weight: 650; }
 h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
 h2 { font-size: 14px; margin: 0; }
@@ -129,13 +129,22 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 #fwSteps { padding-left: 1.3em; margin: 6px 0 12px; }
 .fwbtns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .fwbtns .grow { flex: 1; }
-#btnFw.fwbtn { margin-left: 8px; border: 0; color: #fff; background: #0f8a6b; font-weight: 700; }
+#btnFw.fwbtn { border: 0; color: #fff; background: #0f8a6b; font-weight: 700; }
 #btnFw.fwbtn:hover { filter: brightness(1.1); }
 #btnFw.fwbtn.upd { background: #e8590c; }
 #btnFw.fwbtn.upd::after { content: ' ●'; }
 progress { width: 100%; height: 12px; }
 #modes, #modes2 { display: flex; gap: 4px; }
-.hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+/* 上部メニューは小さめに */
+header button { font-size: 12px; padding: 3px 9px; border-radius: 5px; }
+header .conn { gap: 6px; }
+header #devName { font-size: 11px; }
+header #status { font-size: 11px; }
+header #usebar { width: 120px; height: 4px; }
+header #devbox { min-width: 120px; }
+header .vjbtn { padding: 4px 12px; }
+header #hdrMsg { font-size: 12px; }
 .hrow[hidden], #modes2[hidden] { display: none; }
 #modes button.on, #modes2 button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 #disp { padding: 12px 16px 24px; }
@@ -339,6 +348,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
         <div id="status">未接続</div>
         <div id="usebar" hidden><div></div></div>
       </div>
+      <button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button>
       <button id="btnConnect" class="primary">キーボードに接続</button>
       <button id="btnDemo">デモで試す</button>
     </div>
@@ -348,7 +358,6 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <button id="tabMacro" class="on">マクロ</button>
       <button id="tabKeys">キー割当</button>
       <button id="tabExt">拡張</button>
-      <button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button>
     </nav>
     <div class="conn">
       <button id="btnVj" class="vjbtn" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">⌨ 仮想キーボード起動</button>
