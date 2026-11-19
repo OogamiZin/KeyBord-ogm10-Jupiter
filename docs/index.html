@@ -93,9 +93,10 @@ footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px 10px; 
 .vkhead label { display: inline-flex; align-items: center; gap: 3px; }
 .vkhead .cap { color: var(--sub); font-size: 12px; }
 .vkscroll { overflow-x: auto; }
-#vkKeys { display: flex; gap: 10px; width: 740px; margin: 0 auto; }
+#vkRow { display: flex; gap: 12px; align-items: flex-end; width: max-content; margin: 0 auto; }
+#vkKeys { display: flex; gap: 10px; width: 740px; }
 /* キー割当のときだけ、仮想キーボードの上に「透過」「無効」の行を出す */
-#vkTop { display: none; gap: 3px; width: 740px; margin: 0 auto 3px; }
+#vkTop { display: none; gap: 3px; width: 740px; margin: 0 0 3px; }
 body.vkkeys #vkTop { display: flex; }
 body.vkfix .vkhead, body.vkfix #toast { display: none; }
 #vk { position: relative; }
@@ -263,9 +264,12 @@ select { font: inherit; color: var(--ink); background: var(--panel); border: 1px
 .xcard details label { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
 #xEdit { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 #xEdit #xText { flex: 1; min-width: 220px; font-family: var(--mono); }
-.vkgrp { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; width: 740px; margin: 4px auto 0; padding-left: 4px; border-left: 3px solid var(--mc, var(--line)); box-sizing: border-box; }
-.vkgrp .gl { width: 74px; font-size: 11px; color: var(--sub); white-space: nowrap; }
-.vkgrp .vkx { flex: 0 0 auto; width: auto; min-width: 36px; height: 24px; padding: 0 5px; font-size: 11px; }
+#vkGroups { display: flex; gap: 8px; align-items: flex-end; }
+#vkGroups:empty { display: none; }
+.vkgrp { display: flex; flex-direction: column; gap: 2px; border-top: 3px solid var(--mc, var(--line)); }
+.vkgrp .gl { font-size: 10px; line-height: 12px; color: var(--sub); white-space: nowrap; }
+.vkgrp .vkb { display: grid; grid-auto-flow: column; grid-template-rows: repeat(6, 25px); gap: 3px; }
+.vkgrp .vkx { width: auto; min-width: 34px; height: 25px; padding: 0 4px; font-size: 11px; }
 .vkgrp.ms0 { --mc: #2f6fde; } .vkgrp.ms1 { --mc: #b5487a; } .vkgrp.ms2 { --mc: #0f8a6b; } .vkgrp.ms3 { --mc: #c2410c; }
 .vjbtn { border: 0; border-radius: 999px; padding: 7px 16px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #7c3aed, #2f6fde); box-shadow: 0 2px 8px rgba(76, 60, 220, .35); white-space: nowrap; }
 .vjbtn:hover { filter: brightness(1.1); }
@@ -550,12 +554,16 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <div class="group" id="mSpecialWrap" style="position:relative"><span class="cap">専用キー・その他</span><button id="mSpecialBtn" aria-haspopup="true">一覧から選ぶ ▾</button></div>
     </div>
     <div class="vkscroll">
-      <div id="vkTop">
-        <button type="button" id="kTrns" class="vkey" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
-        <button type="button" id="kNo" class="vkey" title="何も送らない">✕ 無効</button>
+      <div id="vkRow">
+        <div id="vkLeft">
+          <div id="vkTop">
+            <button type="button" id="kTrns" class="vkey" title="下のレイヤーの割り当てをそのまま使う">▽ 透過</button>
+            <button type="button" id="kNo" class="vkey" title="何も送らない">✕ 無効</button>
+          </div>
+          <div id="vkKeys"></div>
+        </div>
+        <div id="vkGroups"></div>
       </div>
-      <div id="vkKeys"></div>
-      <div id="vkGroups"></div>
     </div>
   </div>
   <div class="barrow">
@@ -2182,16 +2190,24 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     const vkg = $('vkGroups'); vkg.textContent = '';
     let gi = 0;
     /* マクロ・タップダンス・マウス・メディアは、仮想キーボードの下にボタンとして並べる */
-    const VK_GROUPS = ['マクロ', 'タップダンス', 'マウス', 'メディア・音量'];
+    const VK_GROUPS = ['マウス', 'メディア・音量', 'マクロ', 'タップダンス'];
+    const vkRows = {};
+    VK_GROUPS.forEach((g, i) => { const r = document.createElement('div'); r.className = 'vkgrp ms' + i; vkRows[g] = r; vkg.appendChild(r); });
+    const VK_SHORT = { KC_BTN1: '左ｸﾘｯｸ', KC_BTN2: '右ｸﾘｯｸ', KC_BTN3: '中ｸﾘｯｸ', KC_BTN4: '戻る', KC_BTN5: '進む', KC_BTN6: 'B6', KC_BTN7: 'B7', KC_BTN8: 'B8',
+      KC_WH_U: 'ﾎｲｰﾙ↑', KC_WH_D: 'ﾎｲｰﾙ↓', KC_WH_L: 'ﾎｲｰﾙ←', KC_WH_R: 'ﾎｲｰﾙ→', KC_MS_U: 'ｶｰｿﾙ↑', KC_MS_D: 'ｶｰｿﾙ↓', KC_MS_L: 'ｶｰｿﾙ←', KC_MS_R: 'ｶｰｿﾙ→',
+      KC_ACL0: '速度1', KC_ACL1: '速度2', KC_ACL2: '速度3',
+      KC_MPLY: '再生', KC_MSTP: '停止', KC_MNXT: '次曲', KC_MPRV: '前曲', KC_MFFD: '早送り', KC_MRWD: '巻戻し', KC_MUTE: '消音', KC_VOLU: '音量+', KC_VOLD: '音量-',
+      KC_EJCT: '取出', KC_MSEL: 'ﾌﾟﾚｰﾔｰ' };
     const group = (label, items) => {
       if (!items.length) return;
       if (VK_GROUPS.includes(label)) {
-        const row = document.createElement('div'); row.className = 'vkgrp ms' + VK_GROUPS.indexOf(label); vkg.appendChild(row);
+        const row = vkRows[label];
         const h = document.createElement('span'); h.className = 'gl'; h.textContent = label; row.appendChild(h);
+        const box = document.createElement('div'); box.className = 'vkb'; row.appendChild(box);
         items.forEach(([value, name, short, desc]) => {
           const b = document.createElement('button'); b.type = 'button'; b.className = 'vkey vkx';
-          let lab = name;
-          if (/^KC_/.test(value)) { try { const l = C.keyLabel(C.keycodeFromText(value, [])); lab = l.main || name; } catch (e) { /* 名前のまま */ } }
+          let lab = VK_SHORT[value] || name;
+          if (!VK_SHORT[value] && /^KC_/.test(value)) { try { const l = C.keyLabel(C.keycodeFromText(value, [])); lab = l.main || name; } catch (e) { /* 名前のまま */ } }
           b.textContent = lab.replace(/^TD\((\d+)\)$/, 'TD$1');
           b.title = name + ': ' + short + (desc ? '\n' + desc : '');
           b.addEventListener('mousedown', e => e.preventDefault());  /* 編集欄のカーソルを保つ */
@@ -2200,7 +2216,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
             vkLatched.clear(); vkSync();
             (D.mode === 'ext' ? extAssignText : keysAssignText)(value);
           });
-          row.appendChild(b);
+          box.appendChild(b);
         });
         return;
       }
@@ -2254,6 +2270,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
       ['OSM(LSFT)', '次の1打だけ Shift', '押して離したあと、次に打つ1キーにだけ Shift が効きます。'],
       ['OSM(LCTL)', '次の1打だけ Ctrl', '押して離したあと、次に打つ1キーにだけ Ctrl が効きます。'],
     ].map(([v, t, d]) => [v, v, t, d]));
+    VK_GROUPS.forEach(g => { if (!vkRows[g].childNodes.length) vkRows[g].remove(); });
   }
   async function keysEnter() {
     if (!st.vial) return;
