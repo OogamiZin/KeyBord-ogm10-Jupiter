@@ -25,7 +25,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.6 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
-header { display: flex; flex-direction: column; gap: 5px; padding: 6px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
 h1 { font-size: 16px; margin: 0; font-weight: 650; }
 h1 small { font-weight: 400; color: var(--sub); margin-left: 6px; }
 h2 { font-size: 14px; margin: 0; }
@@ -135,16 +135,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 #btnFw.fwbtn.upd::after { content: ' ●'; }
 progress { width: 100%; height: 12px; }
 #modes, #modes2 { display: flex; gap: 4px; }
-.hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-/* 上部メニューは小さめに */
-header button { font-size: 12px; padding: 3px 9px; border-radius: 5px; }
-header .conn { gap: 6px; }
-header #devName { font-size: 11px; }
-header #status { font-size: 11px; }
-header #usebar { width: 120px; height: 4px; }
-header #devbox { min-width: 120px; }
-header .vjbtn { padding: 4px 12px; }
-header #hdrMsg { font-size: 12px; }
+.hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .hrow[hidden], #modes2[hidden] { display: none; }
 #modes button.on, #modes2 button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 #disp { padding: 12px 16px 24px; }
