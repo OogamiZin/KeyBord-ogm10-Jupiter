@@ -2223,7 +2223,7 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
         const h = document.createElement('span'); h.className = 'gl'; h.textContent = label; row.appendChild(h);
         const box = document.createElement('div'); box.className = 'vkb'; row.appendChild(box);
         items.forEach(([value, name, short, desc]) => {
-          const b = document.createElement('button'); b.type = 'button'; b.className = 'vkey vkx';
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'vkey vkx'; b.dataset.v = value;
           let lab = VK_SHORT[value] || name;
           if (!VK_SHORT[value] && /^KC_/.test(value)) { try { const l = C.keyLabel(C.keycodeFromText(value, [])); lab = l.main || name; } catch (e) { /* 名前のまま */ } }
           b.textContent = lab.replace(/^TD\((\d+)\)$/, 'TD$1');
