@@ -371,6 +371,8 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     <li><b>レイヤ監視</b>: 今効いているレイヤーの割り当てを表示します。小窓にして、他のアプリの上に浮かせられます。</li>
   </ul>
   <p>変更は右上の「書込」でまとめてキーボードに書き込みます。「エクスポート」「インポート」で、設定全体を Vial 互換ファイル(.vil)に保存・読み込みできます。<br>キーボードが手元にない場合は「デモで試す」で、模擬キーボードを相手に一通りの操作を試せます。</p>
+  <p class="replink">最新ファームウェア: <a id="introFw" href="firmware/ogm10_jupiter_vial.uf2" download="ogm10_jupiter_vial.uf2">ogm10_jupiter_vial.uf2 をダウンロード</a><span id="introFwVer"></span><br>
+    書き込み方: キーボードを書き込みモード（RPI-RP2 ドライブ）にして、このファイルをドライブにコピーします。接続後の「ファーム更新」からも更新できます。</p>
   <p class="replink">GitHub リポジトリ: <a href="https://github.com/OogamiZin/KeyBord.ogm10-Jupiter" target="_blank" rel="noopener">OogamiZin/KeyBord.ogm10-Jupiter</a>（キーボードの設計・ファームウェア・この設定ツール）</p>
 </div>
 
@@ -3650,6 +3652,16 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     if (st.demo && !FW.latest) FW.latest = { version: 'Nov 18 2026 07:00:00', published: '2026-11-18', file: '' };
     fwShow();
   }
+  /* トップ画面のダウンロードリンクに、公開中の版を添える */
+  (async () => {
+    try {
+      const r = await fetch(FW_BASE + 'latest.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      const j = await r.json();
+      $('introFwVer').textContent = '（' + fwFmt(j.version) + '）';
+      if (j.file) $('introFw').href = FW_BASE + j.file;
+    } catch (e) { /* 版が取れなくてもリンクは使える */ }
+  })();
   $('btnFw').addEventListener('click', () => {
     FW.flashing = false;
     $('fwStart').hidden = false; $('fwPick').hidden = true; $('fwSave').hidden = true; $('fwExport').hidden = false;
