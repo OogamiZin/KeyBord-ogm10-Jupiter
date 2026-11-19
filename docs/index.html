@@ -567,7 +567,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
     </div>
   </div>
   <div class="barrow">
-  <span id="toast"></span>
+  <span id="toast" hidden></span>
   <button id="vkShowBtn" hidden>仮想キーボードを出す</button>
   </div>
 </footer>
@@ -1697,7 +1697,8 @@ if (typeof module === 'object' && module.exports) module.exports = JupiterCore;
     }
   }
 
-  function toast(msg, ok) { const t = $('toast'); t.textContent = msg; t.className = ok ? 'ok' : 'ng'; }
+  /* マクロ画面の知らせは、画面下ではなく上部の表示に出す（「書き込みました」などの重複を出さないため） */
+  function toast(msg, ok) { if (msg) hdrMsg(msg, ok); }
   function banner(msg) { const b = $('banner'); b.textContent = msg; b.hidden = !msg; }
 
   if (!navigator.hid) {
