@@ -341,14 +341,13 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
 <body>
 <header>
   <div class="hrow" id="hdrTop">
-    <nav id="modes2" hidden><button id="tabDisp">レイヤ監視</button></nav>
+    <nav id="modes2" hidden><button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button></nav>
     <div class="conn">
       <div id="devbox">
         <div id="devName" hidden></div>
         <div id="status">未接続</div>
         <div id="usebar" hidden><div></div></div>
       </div>
-      <button id="btnFw" class="fwbtn" hidden title="ファームウェアの版の確認と更新">ファーム更新</button>
       <button id="btnConnect" class="primary">キーボードに接続</button>
       <button id="btnDemo">デモで試す</button>
     </div>
@@ -358,6 +357,7 @@ body.pip .tlist { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
       <button id="tabMacro" class="on">マクロ</button>
       <button id="tabKeys">キー割当</button>
       <button id="tabExt">拡張</button>
+      <button id="tabDisp">レイヤ監視</button>
     </nav>
     <div class="conn">
       <button id="btnVj" class="vjbtn" hidden title="クリックで動かせる ogm10-Jupiter を小窓で出します（デモ中のみ）">⌨ 仮想キーボード起動</button>
