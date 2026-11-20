@@ -59,7 +59,7 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 | Part | Quantity |
 |---|---|
 | Choc V2 スイッチ | 43 |
-| キーキャップ（MX 互換の十字軸。Choc V2 は MX 用のキーキャップが付きます） | 43<br>Sample：<br>①オーダーメイド: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)<br>②自作3Dプリント用データ: [keycaps/](keycaps/README.md) |
+| キーキャップ（MX 互換の十字軸。ChocV2はMX用のキーキャップが付く） | 43<br>Sample：<br>①オーダーメイド: Yuzu Keycaps(https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)<br>②自作3Dプリント用データ: [keycaps/](keycaps/README.md) |
 | ロータリーエンコーダー用ノブ（φ6 D カット軸用） | 2（3Dプリント用データあり → [knob/](knob/README.md)） |
 | USB Type-C ケーブル | 1〜 |
 | M2×6mm ネジ（トッププレート側） | 8 |
