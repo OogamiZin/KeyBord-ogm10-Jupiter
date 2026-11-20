@@ -86,38 +86,38 @@ def dot_geom(x, y, d=2.2):
     return Point(x, y).buffer(d / 2, 48)
 
 # Logo, redrawn from logo.png (1254 px square) with every line at one uniform width
-# (70 px = 0.5 mm at the printed size).  How it was made: the traced outline was split into
-# one cell per white area (each pixel goes to its nearest white area), every cell was shrunk
-# by half a line width and the outline by a full line width, and every edge was simplified
-# to straight segments (7 px tolerance).  The
-# stem and the upper-left edge were moved out a little so the gaps there stay >= 0.3 mm.
-# All lines of the original artwork are kept.
+# (80 px = 0.58 mm at the printed size).  How it was made: the traced outline was split into
+# one cell per white area (each pixel goes to its nearest white area; the narrow white areas
+# were given a head start so their cells come out wider), every cell was shrunk by half a
+# line width and the outline by a full line width, the edges were straightened (7 px
+# tolerance, short kinks merged into one corner, long near-horizontal edges levelled), and the
+# stem was widened so the gap inside it stays >= 0.3 mm.  All lines of the original are kept.
 LOGO_OUTER = [
-    (476.0,192.0),(367.0,157.0),(97.0,422.0),(99.0,655.0),(306.0,902.0),(316.0,902.0),(416.0,849.0),
-    (449.0,885.0),(524.0,856.0),(563.0,904.0),(606.0,1163.0),(620.0,1176.0),(791.0,1090.0),(745.0,879.0),
-    (752.0,880.0),(801.0,928.0),(962.0,928.0),(1149.0,735.0),(1148.0,473.0),(1050.0,277.0),(704.0,89.0),
+    (476.0,192.0),(367.0,157.0),(97.0,422.0),(99.0,655.0),(309.1,905.7),(416.0,849.0),(449.0,885.0),
+    (524.0,856.0),(557.0,904.0),(603.6,1187.9),(805.0,1092.0),(754.4,867.6),(801.0,928.0),(962.0,928.0),
+    (1149.0,735.0),(1148.0,473.0),(1050.0,277.0),(704.0,89.0),
 ]
 LOGO_HOLES = [
     [
-        (1003.1,500.0),(1078.1,500.0),(1078.9,706.8),(958.0,831.5),(846.6,704.8),
+        (478.6,588.6),(478.6,508.3),(723.0,190.4),(989.7,335.3),(1033.1,419.0),(804.4,419.0),(691.4,561.6),
+        (531.4,641.6),
     ],
     [
-        (703.1,574.4),(527.8,660.2),(462.9,593.6),(462.1,504.1),(717.2,175.9),(997.2,328.0),(1047.1,427.7),
-        (814.3,432.0),
+        (471.1,790.7),(322.5,610.1),(322.5,496.1),(521.5,259.2),(598.6,224.4),(397.0,490.3),(397.0,610.1),
+        (501.1,726.0),(554.3,720.5),(744.5,625.5),(838.9,497.0),(920.4,497.0),(786.7,673.3),
     ],
     [
-        (781.5,676.8),(468.3,802.5),(318.3,617.3),(314.1,494.1),(527.5,245.5),(599.0,213.2),(391.0,485.7),
-        (391.0,613.9),(501.1,733.8),(542.8,731.6),(744.9,632.6),(842.0,502.8),(912.1,502.6),
+        (241.5,465.9),(241.5,633.2),(365.6,785.2),(328.8,804.7),(178.0,625.6),(178.0,455.3),(388.6,247.9),
+        (421.1,258.4),
     ],
     [
-        (669.5,797.5),(789.7,747.4),(888.7,858.0),(829.6,858.0),(784.6,813.9),
+        (1068.5,702.7),(959.4,815.7),(860.5,707.5),(1012.1,503.0),(1068.0,503.0),
     ],
     [
-        (662.6,1076.2),(629.0,874.2),(592.8,829.7),(656.8,802.9),(711.0,1051.9),
+        (706.5,791.0),(795.9,754.4),(878.8,848.0),(840.3,848.0),(807.5,805.4),
     ],
     [
-        (244.0,465.8),(244.0,632.0),(373.8,792.1),(326.3,817.3),(168.8,629.3),(167.3,451.1),(385.9,236.6),
-        (429.6,250.6),
+        (665.3,1069.9),(633.0,873.4),(605.4,833.2),(659.6,810.6),(712.9,1047.2),
     ],
 ]
 
@@ -173,7 +173,7 @@ add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
 add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))
-add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.8,None)], homing=False))
+add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,8.0,None)], homing=False))
 add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",-0.09,-0.08,MOD,"c")], homing=False))
 add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,0.02,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
 add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",-0.54,-0.08,MOD,"l")], homing=False))
