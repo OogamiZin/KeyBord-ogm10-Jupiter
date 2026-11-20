@@ -4,9 +4,9 @@ usage:  python3 gen_keycaps.py OUTDIR
 writes: OUTDIR/ogm10-Jupiter-keycaps-{cream,gray,dark}-{2color,fullcolor}.3mf
         OUTDIR/ogm10-Jupiter-keycap-cross-fit-test.stl
         OUTDIR/keycaps-preview.png
-deps:   pip install numpy opencv-python-headless trimesh manifold3d shapely matplotlib
+deps:   pip install numpy trimesh manifold3d shapely matplotlib
 """
-import os, sys, json, zipfile, numpy as np, cv2, trimesh
+import os, sys, json, zipfile, numpy as np, trimesh
 import manifold3d as m3
 from shapely.geometry import Polygon, Point, box
 from shapely.ops import unary_union
@@ -16,7 +16,6 @@ from matplotlib.font_manager import FontProperties
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONT = FontProperties(fname=os.path.join(HERE, "fonts", "Oswald-SemiBold.ttf"))          # main legends
-LOGO_IMG = os.path.join(HERE, "logo.png")
 
 SKIRT, TOP = 3.0, 1.6
 H = SKIRT + TOP
@@ -50,8 +49,16 @@ def text_geom(s, h, x, y, align="c"):
     """h = cap height (mm); (x,y) = cap-height center; align horizontal."""
     fp = FONT_SUB if h <= 3.0 else FONT     # small (green / orange) legends: JetBrains Mono ExtraBold
     size = h / cap_height(fp)
-    tp = TextPath((0, 0), s, size=size, prop=fp)
-    g = _rings_to_geom(tp.to_polygons())
+    if s == "J" and fp is FONT:
+        # Oswald's J has only a tiny hook: build a J from the U (right stem + bowl + a
+        # left arm cut down to ~40% of the cap height) so the hook reads clearly
+        u = _rings_to_geom(TextPath((0, 0), "U", size=size, prop=fp).to_polygons())
+        ux0, uy0, ux1, uy1 = u.bounds
+        cut = box(ux0 - 1, uy0 + 0.42 * (uy1 - uy0), (ux0 + ux1) / 2, uy1 + 1)
+        g = affinity.scale(u.difference(cut), 0.9, 1.0, origin=(ux1, 0))
+    else:
+        tp = TextPath((0, 0), s, size=size, prop=fp)
+        g = _rings_to_geom(tp.to_polygons())
     if fp is FONT_SUB and "0" in s and hasattr(g, "geoms"):
         # plain zero: drop the dot that sits inside the 0's counter
         parts = list(g.geoms)
@@ -78,33 +85,27 @@ def arrow_geom(direction, x, y, L=6.5, head=4.6, shaft=1.9):
 def dot_geom(x, y, d=2.2):
     return Point(x, y).buffer(d / 2, 48)
 
-_logo = None
+# Logo redrawn as centre lines (pixel coords of logo.png, 1254 px square) so it can be
+# stroked at a uniform width.  Compared with tracing the artwork: the middle of the three
+# left-hand arcs is dropped and the hollow stem becomes one solid stroke, which leaves room
+# for thicker lines without the gaps between them closing up.
+LOGO_LINES = [[(651, 167), (677, 147), (738, 150), (1015, 300), (1066, 400), (1078, 460)], [(651, 167), (585, 179), (471, 226)], [(651, 167), (634, 229), (437, 476), (426, 583), (438, 620), (519, 694), (555, 687), (723, 605), (817, 476), (843, 466), (954, 470)], [(471, 226), (398, 208), (375, 214), (151, 434), (142, 459), (141, 617), (153, 658), (320, 852)], [(1078, 460), (954, 470)], [(1078, 460), (1104, 473), (1111, 505), (1111, 704), (1101, 736), (986, 854), (936, 871)], [(954, 470), (938, 528), (825, 675), (813, 712)], [(813, 712), (761, 720), (564, 802), (553, 821)], [(813, 712), (936, 871)], [(416, 813), (320, 852)], [(416, 813), (464, 836)], [(553, 821), (464, 836)], [(654, 820), (697, 848)], [(697, 848), (762, 854), (832, 897), (924, 897), (936, 871)]]
+LOGO_STEM = [(625, 832), (688, 1092)]
+LOGO_STROKE = 0.55      # line width (mm) at the printed size
+LOGO_STEM_K = 1.5       # stem is this much wider than the other lines
+
 def logo_geom(x, y, size):
-    global _logo
-    if _logo is None:
-        img = cv2.imread(LOGO_IMG, cv2.IMREAD_GRAYSCALE)
-        _, bw = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY_INV)
-        cnts, hier = cv2.findContours(bw, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
-        hier = hier[0]; polys = []
-        for i, c in enumerate(cnts):
-            if hier[i][3] != -1: continue
-            outer = cv2.approxPolyDP(c, 1.5, True)[:, 0, :]
-            holes = []; j = hier[i][2]
-            while j != -1:
-                hh = cv2.approxPolyDP(cnts[j], 1.5, True)[:, 0, :]
-                if len(hh) >= 3 and cv2.contourArea(hh) > 30: holes.append(hh)
-                j = hier[j][0]
-            if len(outer) >= 3:
-                p = Polygon(outer, holes).buffer(0)
-                if p.area > 50: polys.append(p)
-        g = unary_union(polys)
-        g = affinity.scale(g, 1, -1, origin=(0, 0))
-        minx, miny, maxx, maxy = g.bounds
-        g = affinity.translate(g, -(minx + maxx) / 2, -(miny + maxy) / 2)
-        _logo = (g, max(maxx - minx, maxy - miny))
-    g, ext = _logo
-    s = size / ext
-    return affinity.translate(affinity.scale(g, s, s, origin=(0, 0)), x, y)
+    from shapely.geometry import LineString
+    s = 0.006
+    for _ in range(4):                      # converge on px->mm scale incl. the stroke width
+        wp = LOGO_STROKE / s
+        parts = [LineString(p).buffer(wp/2, join_style=1, cap_style=1, quad_segs=12) for p in LOGO_LINES]
+        parts.append(LineString(LOGO_STEM).buffer(wp*LOGO_STEM_K/2, join_style=1, cap_style=1, quad_segs=12))
+        g = unary_union(parts)
+        b = g.bounds
+        s = size / max(b[2]-b[0], b[3]-b[1])
+    g = affinity.scale(g, s, -s, origin=(0, 0)); b = g.bounds
+    return affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
 
 # ---------------- layout (from the reference image) ----------------
 # positions are fractions of a 1u key (x right, y up), legends: (kind, text, color, fx, fy, height, align)
@@ -148,7 +149,7 @@ add(2, 7.5, 1, "cream", m)
 add(2, 8.5, 1, "cream", dict(L=[("t","<","main",-0.06,0.18,MAIN*0.75,"c",(1.8,1.8)),("t",",","main",-0.06,-0.18,MAIN*0.75,"c",(1.8,1.8)),
                                ("t",">","green",0.32,0.03,SUB,"c",(1.3,1.3)),("t",".","green",0.32,-0.27,SUB,"c",(1.4,1.4))], homing=False))
 add(2, 10, 1, "gray", dict(L=[("t","PGUP","orange",TR[0],TR[1],LAY,"r"),("a","up","main",0,-0.02,None,None)], homing=False))
-add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),("t","@","white",0,-0.12,MAIN*1.15,"c"),
+add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),("t","@","white",0,-0.12,MAIN*1.0,"c"),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
 add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))

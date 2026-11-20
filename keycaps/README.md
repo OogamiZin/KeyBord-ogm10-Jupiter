@@ -79,10 +79,11 @@ Bambu Studio で開くと、色をフィラメントに割り当てる画面が�
 `scripts/` に生成スクリプトがあります。
 
 ```
-pip install numpy opencv-python-headless trimesh manifold3d shapely matplotlib
+pip install numpy trimesh manifold3d shapely matplotlib
 python3 scripts/gen_keycaps.py .      # 3MF・テストキー・配置図を作る
 python3 scripts/check_layout.py mx    # 文字がはみ出していないか、くっついていないかを確認
 ```
 
 - 印字の内容・位置・大きさは `gen_keycaps.py` の `KEYS` で決めています。
+- ロゴは `logo.png` を元に中心線で描き直したもの（`LOGO_LINES`）で、線の太さは `LOGO_STROKE` で変えられます。
 - フォントは SIL Open Font License で配布されているものを同梱しています（`scripts/fonts/` のライセンス文を参照）。
