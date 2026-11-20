@@ -85,27 +85,29 @@ def arrow_geom(direction, x, y, L=6.5, head=4.6, shaft=1.9):
 def dot_geom(x, y, d=2.2):
     return Point(x, y).buffer(d / 2, 48)
 
-# Logo redrawn as centre lines (pixel coords of logo.png, 1254 px square) so it can be
-# stroked at a uniform width.  Compared with tracing the artwork: the middle of the three
-# left-hand arcs is dropped and the hollow stem becomes one solid stroke, which leaves room
-# for thicker lines without the gaps between them closing up.
-LOGO_LINES = [[(651, 167), (677, 147), (738, 150), (1015, 300), (1066, 400), (1078, 460)], [(651, 167), (585, 179), (471, 226)], [(651, 167), (634, 229), (437, 476), (426, 583), (438, 620), (519, 694), (555, 687), (723, 605), (817, 476), (843, 466), (954, 470)], [(471, 226), (398, 208), (375, 214), (151, 434), (142, 459), (141, 617), (153, 658), (320, 852)], [(1078, 460), (954, 470)], [(1078, 460), (1104, 473), (1111, 505), (1111, 704), (1101, 736), (986, 854), (936, 871)], [(954, 470), (938, 528), (825, 675), (813, 712)], [(813, 712), (761, 720), (564, 802), (553, 821)], [(813, 712), (936, 871)], [(416, 813), (320, 852)], [(416, 813), (464, 836)], [(553, 821), (464, 836)], [(654, 820), (697, 848)], [(697, 848), (762, 854), (832, 897), (924, 897), (936, 871)]]
-LOGO_STEM = [(625, 832), (688, 1092)]
-LOGO_STROKE = 0.55      # line width (mm) at the printed size
-LOGO_STEM_K = 1.5       # stem is this much wider than the other lines
+# Logo outline traced from logo.png (1254 px square) and cleaned into straight-edged
+# polygons.  The slit inside the stem is widened (it was ~0.27 mm at print size and closed
+# up when printed); a small closing step fills only knife-edge slivers.  All lines of the
+# original artwork are kept.
+LOGO_OUTER = [(704,89),(476,192),(375,165),(105,430),(107,655),(306,902),(316,902),(416,849),(449,885),
+              (524,856),(569,904),(612,1161),(620,1170),(779,1088),(733,879),(752,880),(801,928),(962,928),
+              (1149,735),(1148,473),(1050,277)]
+LOGO_HOLES = [
+    [(788,746),(894,865),(824,866),(770,814),(647,814),(715,1058),(657,1090),(619,873),(587,829)],   # stem slit (widened)
+    [(1074,501),(1075,711),(959,829),(846,705),(999,501)],
+    [(402,239),(437,252),(383,318),(243,467),(244,634),(380,796),(333,822),(177,634),(177,462)],
+    [(612,204),(545,294),(389,482),(390,617),(504,739),(517,740),(752,627),(842,501),(915,503),(779,677),
+     (476,804),(314,616),(313,491),(518,246)],
+    [(988,330),(1036,431),(808,432),(698,582),(531,664),(463,597),(464,496),(708,180)],
+]
+LOGO_CLOSE = 0.14       # mm: fill knife-edge slivers narrower than ~0.28 mm
 
 def logo_geom(x, y, size):
-    from shapely.geometry import LineString
-    s = 0.006
-    for _ in range(4):                      # converge on px->mm scale incl. the stroke width
-        wp = LOGO_STROKE / s
-        parts = [LineString(p).buffer(wp/2, join_style=1, cap_style=1, quad_segs=12) for p in LOGO_LINES]
-        parts.append(LineString(LOGO_STEM).buffer(wp*LOGO_STEM_K/2, join_style=1, cap_style=1, quad_segs=12))
-        g = unary_union(parts)
-        b = g.bounds
-        s = size / max(b[2]-b[0], b[3]-b[1])
+    g = Polygon(LOGO_OUTER, LOGO_HOLES).buffer(0)
+    b = g.bounds; s = size / max(b[2]-b[0], b[3]-b[1])
     g = affinity.scale(g, s, -s, origin=(0, 0)); b = g.bounds
-    return affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
+    g = affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
+    return g.buffer(LOGO_CLOSE, join_style=2, mitre_limit=5).buffer(-LOGO_CLOSE, join_style=2, mitre_limit=5)
 
 # ---------------- layout (from the reference image) ----------------
 # positions are fractions of a 1u key (x right, y up), legends: (kind, text, color, fx, fy, height, align)
@@ -153,7 +155,7 @@ add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
 add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))
-add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,6.5,None)], homing=False))
+add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.2,None)], homing=False))
 add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",-0.09,-0.08,MOD,"c")], homing=False))
 add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,0.02,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
 add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",-0.54,-0.08,MOD,"l")], homing=False))
