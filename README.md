@@ -59,13 +59,13 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 | Part | Quantity |
 |---|---|
 | Choc V2 スイッチ | 43 |
-| キーキャップ（MX 互換の十字軸。ChocV2はMX用のキーキャップが付く） | 43<br>Sample：<br>①オーダーメイド: Yuzu Keycaps(https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)<br>②自作3Dプリント用データ: [keycaps/](keycaps/README.md) |
+| キーキャップ（MX 互換の十字軸。Choc V2 は MX 用のキーキャップが付きます） | 43<br>Sample：<br>①オーダーメイド: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)<br>②自作3Dプリント用データ: [keycaps/](keycaps/README.md) |
 | ロータリーエンコーダー用ノブ（φ6 D カット軸用） | 2（3Dプリント用データあり → [knob/](knob/README.md)） |
 | USB Type-C ケーブル | 1〜 |
 | M2×6mm ネジ（トッププレート側） | 8 |
 | M2×4mm ネジ（ボトムプレート側） | 8 |
 | M2×3mm スペーサー（メス-メス） | 8（例: [Amazon](https://amzn.asia/d/0fCThe3z)） |
-| M2 ワッシャー（外径 5mm・厚さ 1mm） | 8（3Dプリント用: [`plate/M2-washer-t1.0-D5.stl`](plate/M2-washer-t1.0-D5.stl)） |
+| M2 ワッシャー（外径 5mm・厚さ 1mm） | 8（3Dプリント用: [`plate/M2_washer_t1.0_D5.3mf`](plate/M2_washer_t1.0_D5.3mf)） |
 | 2.54mm ジャンパーピン（任意） | 1（JP1 のショート用。ピンセットなどでショートしても構いません） |
 
 ## 書き込み
@@ -128,7 +128,7 @@ M2×3mm スペーサー
 | `pcb/ogm10-Jupiter-schematic.json` | 回路図（EasyEDA Standard ソース）。確認用 |
 | `plate/ogm10-Jupiter-top-plate.json` | トッププレート（EasyEDA Standard ソース）。Gerber をここから出力 |
 | `plate/ogm10-Jupiter-bottom-plate.json` | ボトムプレート（EasyEDA Standard ソース）。Gerber をここから出力 |
-| `plate/M2-washer-t1.0-D5.stl` | M2 ワッシャー（3D プリント用） |
+| `plate/M2_washer_t1.0_D5.3mf` | M2 ワッシャー（3D プリント用） |
 | `qmk_firmware/` | QMK / Vial ファームウェア |
 | `docs/firmware/ogm10_jupiter_vial.uf2` | ビルド済みファームウェア（最新版） |
 | `knob/` | ロータリーエンコーダー用ノブ（STL / FreeCAD マクロ） |
