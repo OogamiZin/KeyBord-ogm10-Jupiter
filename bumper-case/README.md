@@ -47,11 +47,10 @@ STL は印刷する向きに置いてあります。前後のガードは長さ�
 
 ## 生成スクリプト
 
-`scripts/` に、STL を作った Python スクリプトがあります（manifold3d、trimesh、shapely を使います）。
+`scripts/gen_bumper.py` で、5つの STL（足 L/R・前ガード・後ガード・スタンド）をまとめて作れます（manifold3d、trimesh、shapely を使います）。
 
 ```
-python3 gen_v31.py <出力フォルダ>       # 足 L/R・前ガード・後ガード
-python3 gen_stand24.py <出力フォルダ>   # スタンド
+python3 gen_bumper.py <出力フォルダ>
 ```
 
-すき間や爪の位置は、各スクリプトの先頭の定数で変えられます。
+すき間や爪の位置、くさびの範囲などは、スクリプト内の各ブロックの先頭にある定数で変えられます。`scripts/pcb_bottom_obstacles.py` は、くさびの位置を決めるときに使った PCB 裏面の部品位置データです。
