@@ -39,13 +39,14 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 | ノブ：選び方、ファイル一覧、印刷のコツ | [knob/README.md](knob/README.md) |
 | 設定ツール：使い方、できること、制約 | [docs/README.md](docs/README.md) |
 | バンパーケース：足・前後ガード・縦置きスタンドの 3D データ、取り付け方 | [bumper-case/README.md](bumper-case/README.md) |
+| キーキャップ：43キー分の 3D データ（2色・フルカラー）、十字穴の合わせ込み、印刷設定 | [keycaps/README.md](keycaps/README.md) |
 
 ## 自分で用意するもの
 
 | Part | Quantity |
 |---|---|
 | Choc V2 スイッチ | 43 |
-| キーキャップ（Choc 用） | 43（推奨: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)） |
+| キーキャップ（Choc 用） | 43（推奨: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)、3Dプリント用データあり → [keycaps/](keycaps/README.md)） |
 | ロータリーエンコーダー用ノブ | 2（3Dプリント用データあり → [knob/](knob/README.md)） |
 | USB Type-C ケーブル | 1〜 |
 | M2×6mm ネジ（トッププレート側） | 8 |
