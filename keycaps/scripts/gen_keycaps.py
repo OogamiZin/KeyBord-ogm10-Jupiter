@@ -93,20 +93,22 @@ LOGO_OUTER = [(704,89),(476,192),(375,165),(105,430),(107,655),(306,902),(316,90
               (524,856),(569,904),(612,1161),(620,1170),(779,1088),(733,879),(752,880),(801,928),(962,928),
               (1149,735),(1148,473),(1050,277)]
 LOGO_HOLES = [
-    [(788,746),(894,865),(824,866),(770,814),(647,814),(715,1058),(657,1090),(619,873),(587,829)],   # stem slit (widened)
+    [(788,746),(894,865),(824,866),(770,814),(650,814),(729,1055),(645,1098),(603,885),(568,836)],   # stem slit (widened)
     [(1074,501),(1075,711),(959,829),(846,705),(999,501)],
-    [(402,239),(437,252),(383,318),(243,467),(244,634),(380,796),(333,822),(177,634),(177,462)],
-    [(612,204),(545,294),(389,482),(390,617),(504,739),(517,740),(752,627),(842,501),(915,503),(779,677),
-     (476,804),(314,616),(313,491),(518,246)],
+    [(402,239),(437,252),(393,326),(256,472),(244,634),(380,796),(333,822),(177,634),(177,462)],   # upper part widened
+    [(612,204),(545,294),(389,482),(390,617),(504,739),(517,740),(752,627),(842,501),(915,503),(783,689),
+     (478,816),(314,616),(313,491),(518,246)],
     [(988,330),(1036,431),(808,432),(698,582),(531,664),(463,597),(464,496),(708,180)],
 ]
-LOGO_CLOSE = 0.14       # mm: fill knife-edge slivers narrower than ~0.28 mm
+LOGO_CLOSE = 0.10       # mm: fill knife-edge slivers narrower than ~0.2 mm
+LOGO_THICKEN = 0.03     # mm added to each side of every line (lines +0.06, gaps -0.06)
 
 def logo_geom(x, y, size):
     g = Polygon(LOGO_OUTER, LOGO_HOLES).buffer(0)
     b = g.bounds; s = size / max(b[2]-b[0], b[3]-b[1])
     g = affinity.scale(g, s, -s, origin=(0, 0)); b = g.bounds
     g = affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
+    if LOGO_THICKEN: g = g.buffer(LOGO_THICKEN, join_style=2, mitre_limit=5)
     return g.buffer(LOGO_CLOSE, join_style=2, mitre_limit=5).buffer(-LOGO_CLOSE, join_style=2, mitre_limit=5)
 
 # ---------------- layout (from the reference image) ----------------
@@ -155,7 +157,7 @@ add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
 add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))
-add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.2,None)], homing=False))
+add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.5,None)], homing=False))
 add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",-0.09,-0.08,MOD,"c")], homing=False))
 add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,0.02,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
 add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",-0.54,-0.08,MOD,"l")], homing=False))
