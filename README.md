@@ -46,7 +46,7 @@ Webブラウザ（PC版Chrome か Edge）で、マクロの編集、キー割り
 | Part | Quantity |
 |---|---|
 | Choc V2 スイッチ | 43 |
-| キーキャップ（Choc 用） | 43（Sample　オーダーメイド: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)、自作3Dプリント用データ: [keycaps/](keycaps/README.md)） |
+| キーキャップ（Choc 用） | 43<br>Sample：<br>①オーダーメイド: [ogm10-Jupiter 専用デザイン（Yuzu Keycaps / PFF・PBT 昇華印刷・43キー）](https://yuzukeycaps.com/ja/c/fe731a0d-f7e9-4b01-95c2-b6d7624d95f9)<br>②自作3Dプリント用データ: [keycaps/](https://github.com/OogamiZin/KeyBord.ogm10-Jupiter/blob/main/keycaps/README.md) |
 | ロータリーエンコーダー用ノブ | 2（3Dプリント用データあり → [knob/](knob/README.md)） |
 | USB Type-C ケーブル | 1〜 |
 | M2×6mm ネジ（トッププレート側） | 8 |
