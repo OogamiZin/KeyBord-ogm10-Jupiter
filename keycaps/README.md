@@ -85,5 +85,5 @@ python3 scripts/check_layout.py mx    # 文字がはみ出していないか、�
 ```
 
 - 印字の内容・位置・大きさは `gen_keycaps.py` の `KEYS` で決めています。
-- ロゴは `logo.png` の輪郭を直線の多角形に整えたもの（`LOGO_OUTER` / `LOGO_HOLES`）です。線は `LOGO_THICKEN` で太らせ、狭くなる余白は頂点を動かして印刷で潰れない幅に広げています。
+- ロゴは `logo.png` を元に、すべての線を同じ太さ（印刷時 0.5 mm）で描き直した多角形（`LOGO_OUTER` / `LOGO_HOLES`）です。元絵の線はすべて残し、余白が 0.3 mm 未満にならないよう軸と左上の外形を少し外へ広げています。
 - フォントは SIL Open Font License で配布されているものを同梱しています（`scripts/fonts/` のライセンス文を参照）。

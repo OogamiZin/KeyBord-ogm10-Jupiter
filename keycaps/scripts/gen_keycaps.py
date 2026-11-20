@@ -85,31 +85,51 @@ def arrow_geom(direction, x, y, L=6.5, head=4.6, shaft=1.9):
 def dot_geom(x, y, d=2.2):
     return Point(x, y).buffer(d / 2, 48)
 
-# Logo outline traced from logo.png (1254 px square) and cleaned into straight-edged
-# polygons.  The slit inside the stem is widened (it was ~0.27 mm at print size and closed
-# up when printed); a small closing step fills only knife-edge slivers.  All lines of the
-# original artwork are kept.
-LOGO_OUTER = [(704,89),(476,192),(375,165),(105,430),(107,655),(306,902),(316,902),(416,849),(449,885),
-              (524,856),(569,904),(612,1161),(620,1170),(779,1088),(733,879),(752,880),(801,928),(962,928),
-              (1149,735),(1148,473),(1050,277)]
-LOGO_HOLES = [
-    [(788,746),(894,865),(824,866),(770,814),(650,814),(729,1055),(645,1098),(603,885),(568,836)],   # stem slit (widened)
-    [(1074,501),(1075,711),(959,829),(846,705),(999,501)],
-    [(402,239),(437,252),(393,326),(256,472),(244,634),(380,796),(333,822),(177,634),(177,462)],   # upper part widened
-    [(612,204),(545,294),(389,482),(390,617),(504,739),(517,740),(752,627),(842,501),(915,503),(783,689),
-     (478,816),(314,616),(313,491),(518,246)],
-    [(988,330),(1036,431),(808,432),(698,582),(531,664),(463,597),(464,496),(708,180)],
+# Logo, redrawn from logo.png (1254 px square) with every line at one uniform width
+# (70 px = 0.5 mm at the printed size).  How it was made: the traced outline was split into
+# one cell per white area (each pixel goes to its nearest white area), every cell was shrunk
+# by half a line width and the outline by a full line width, and the result simplified.  The
+# stem and the upper-left edge were moved out a little so the gaps there stay >= 0.3 mm.
+# All lines of the original artwork are kept.
+LOGO_OUTER = [
+    (476.0,192.0),(367.0,157.0),(97.0,422.0),(99.0,655.0),(306.0,902.0),(316.0,902.0),(416.0,849.0),
+    (449.0,885.0),(524.0,856.0),(563.0,904.0),(606.0,1163.0),(620.0,1176.0),(791.0,1090.0),(745.0,879.0),
+    (752.0,880.0),(801.0,928.0),(962.0,928.0),(1149.0,735.0),(1148.0,473.0),(1050.0,277.0),(704.0,89.0),
 ]
-LOGO_CLOSE = 0.10       # mm: fill knife-edge slivers narrower than ~0.2 mm
-LOGO_THICKEN = 0.03     # mm added to each side of every line (lines +0.06, gaps -0.06)
+LOGO_HOLES = [
+    [
+        (703.1,574.4),(644.5,604.6),(527.8,660.2),(462.9,593.6),(462.1,504.1),(468.0,493.8),(595.6,335.5),
+        (671.4,234.8),(681.7,211.4),(686.1,187.7),(685.7,174.1),(701.1,167.1),(997.2,328.0),(1047.1,427.7),
+        (1040.3,430.2),(975.4,432.2),(957.3,439.9),(949.5,436.4),(926.3,432.0),(814.3,432.0),(788.6,455.7),
+    ],
+    [
+        (781.5,676.8),(768.0,679.3),(560.6,765.5),(546.9,773.2),(546.2,772.4),(468.3,802.5),(452.1,784.8),
+        (442.9,764.2),(318.3,617.3),(314.9,611.8),(314.1,494.1),(433.7,357.7),(492.2,286.6),(502.6,267.3),
+        (506.0,255.2),(599.0,213.2),(539.4,292.5),(409.0,454.2),(391.0,485.7),(391.0,613.9),(409.9,641.4),
+        (501.1,733.8),(542.8,731.6),(675.5,668.4),(744.9,632.6),(758.8,618.7),(842.0,502.8),(912.1,502.6),
+        (787.2,665.3),
+    ],
+    [
+        (244.0,465.8),(244.0,632.0),(260.7,658.7),(373.8,792.1),(326.3,817.3),(168.8,629.3),(167.3,451.1),
+        (385.9,236.6),(429.6,250.6),(366.4,327.3),
+    ],
+    [
+        (976.4,534.9),(987.0,510.6),(988.0,503.2),(992.9,501.9),(1051.1,500.9),(1067.8,497.2),(1078.1,492.1),
+        (1078.9,706.8),(958.0,831.5),(954.6,825.5),(846.6,704.8),
+    ],
+    [
+        (669.5,797.5),(789.7,747.4),(888.7,858.0),(829.6,858.0),(784.6,813.9),
+    ],
+    [
+        (662.6,1076.2),(629.0,874.2),(592.8,829.7),(656.8,802.9),(711.0,1051.9),
+    ],
+]
 
 def logo_geom(x, y, size):
     g = Polygon(LOGO_OUTER, LOGO_HOLES).buffer(0)
     b = g.bounds; s = size / max(b[2]-b[0], b[3]-b[1])
     g = affinity.scale(g, s, -s, origin=(0, 0)); b = g.bounds
-    g = affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
-    if LOGO_THICKEN: g = g.buffer(LOGO_THICKEN, join_style=2, mitre_limit=5)
-    return g.buffer(LOGO_CLOSE, join_style=2, mitre_limit=5).buffer(-LOGO_CLOSE, join_style=2, mitre_limit=5)
+    return affinity.translate(g, x - (b[0]+b[2])/2, y - (b[1]+b[3])/2)
 
 # ---------------- layout (from the reference image) ----------------
 # positions are fractions of a 1u key (x right, y up), legends: (kind, text, color, fx, fy, height, align)
@@ -157,7 +177,7 @@ add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
 add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))
-add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.5,None)], homing=False))
+add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,7.8,None)], homing=False))
 add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",-0.09,-0.08,MOD,"c")], homing=False))
 add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,0.02,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
 add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",-0.54,-0.08,MOD,"l")], homing=False))
