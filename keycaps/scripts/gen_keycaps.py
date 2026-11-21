@@ -163,7 +163,7 @@ r1 = [("A","!1","l"),("S","\"2","l"),("D","#3","l"),("F","$4","l"),("G","%5","l"
       ("H","&6","r"),("J","'7","r"),("K","(8","r"),("L",")9","r")]
 for i,(ch,s,sd) in enumerate(r1):
     add(1, 1 + i, 1, "cream", alpha(ch, sub=s, side=sd, homing=ch in "FJ"))
-add(1, 10, 1, "cream", dict(L=[("t","=","main",-0.06,0.18,MAIN*0.8,"c",(2.6,1.4)),("t","-","main",-0.06,-0.18,MAIN*0.8,"c",(3.2,1.6)),
+add(1, 10, 1, "cream", dict(L=[("t","=","main",-0.06,0.12,MAIN*0.8,"c",(2.6,1.4)),("t","-","main",-0.06,-0.12,MAIN*0.8,"c",(3.2,1.6)),
                               ("t","_","orange",0.30,0.20,LAY,"c",(1.0,1.3)),("t","0","green",0.32,-0.29,SUB,"c")], homing=False))
 add(1, 11, 1, "gray", dict(L=[("t","BKSP","main",-XL,YW,MOD,"r"),("t","DEL","green",-XL,YS,LAY,"r",OSW)], homing=False))
 # row 2
@@ -173,7 +173,7 @@ for i,(ch,s,sd) in enumerate(r2):
     add(2, 1.5 + i, 1, "cream", alpha(ch, sub=s, side=sd))
 m = alpha("M", sub="?/", side="r", lay="MENU"); m["L"].append(("d", None, "green", 0.12, -0.27, 1.5, None))
 add(2, 7.5, 1, "cream", m)
-add(2, 8.5, 1, "cream", dict(L=[("t","<","main",-0.06,0.18,MAIN*0.75,"c",(1.8,1.8)),("t",",","main",-0.06,-0.18,MAIN*0.75,"c",(1.8,1.8)),
+add(2, 8.5, 1, "cream", dict(L=[("t","<","main",-0.06,0.13,MAIN*0.75,"c",(1.8,1.8)),("t",",","main",-0.06,-0.13,MAIN*0.75,"c",(1.8,1.8)),
                                ("t",">","green",0.32,0.03,SUB,"c",(1.3,1.3)),("t",".","green",0.32,-0.27,SUB,"c",(1.4,1.4))], homing=False))
 add(2, 10, 1, "gray", dict(L=[("t","PGUP","orange",-XL,TR[1],LAY,"r",OSW),("a","up","main",0,-0.02,None,None)], homing=False))
 add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),("t","@","white",0,-0.12,MAIN*1.0,"c"),
