@@ -14,7 +14,7 @@ ogm10-Jupiter の 43キー分のキーキャップを3Dプリントで作れま�
 | サイズ | MX サイズ。1u は底面 18 × 18 mm、天面 16 × 16 mm。SHIFT・SPACE・ENTER は 1.5u（底面 27.5 mm） |
 | 形 | 天面は平ら、側面は片側 1.0 mm 内側に傾く台形。高さ 4.6 mm |
 | 十字穴 | 幅 1.20 mm × 長さ 4.05 mm、深さ 3.0 mm（軸の筒は直径 5.5 mm） |
-| 印字 | 深さ 0.6 mm の埋め込み。メインの文字は Oswald、小さい文字は JetBrains Mono |
+| 印字 | 深さ 0.6 mm の埋め込み。メインの文字は Oswald、小さい文字は JetBrains Mono。全体の大きさは `gen_keycaps.py` の `TEXT_SCALE` で変えられます |
 | ホームポジション | F と J の天面に高さ 0.5 mm の突起 |
 
 ## ファイル

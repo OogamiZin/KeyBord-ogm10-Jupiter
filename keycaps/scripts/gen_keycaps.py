@@ -73,7 +73,7 @@ def text_geom(s, h, x, y, align="c"):
     else: dx = x - maxx
     return affinity.translate(g, dx, y - h / 2)
 
-def arrow_geom(direction, x, y, L=6.5, head=4.6, shaft=1.9):
+def arrow_geom(direction, x, y, L=6.5 * 0.93, head=4.6 * 0.93, shaft=1.9 * 0.93):
     hl = head * 0.62
     pts = [(-L/2, -shaft/2), (L/2 - hl, -shaft/2), (L/2 - hl, -head/2), (L/2, 0),
            (L/2 - hl, head/2), (L/2 - hl, shaft/2), (-L/2, shaft/2)]
@@ -129,7 +129,8 @@ def logo_geom(x, y, size):
 
 # ---------------- layout (from the reference image) ----------------
 # positions are fractions of a 1u key (x right, y up), legends: (kind, text, color, fx, fy, height, align)
-MAIN, MOD, SUB, LAY = 5.0, 4.0, 3.0, 2.8
+TEXT_SCALE = 0.93     # overall legend size (text and arrows); 1.0 = original sizes
+MAIN, MOD, SUB, LAY = (v * TEXT_SCALE for v in (5.0, 4.0, 3.0, 2.8))
 TR = (0.36, 0.33)   # orange top-right (right aligned)
 def alpha(ch, sub=None, side="l", lay=None, fn=None, fnside="l", homing=False):
     L = [("t", ch, "main", 0, 0.22 if side == "c" else 0.05, MAIN, "c")]
