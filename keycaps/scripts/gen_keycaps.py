@@ -45,9 +45,9 @@ def cap_height(fp=None):
         _caph[k] = TextPath((0, 0), "H", size=1, prop=fp).vertices[:, 1].max()
     return _caph[k]
 
-def text_geom(s, h, x, y, align="c"):
+def text_geom(s, h, x, y, align="c", font=None):
     """h = cap height (mm); (x,y) = cap-height center; align horizontal."""
-    fp = FONT_SUB if h <= 3.0 else FONT     # small (green / orange) legends: JetBrains Mono ExtraBold
+    fp = font or (FONT_SUB if h <= 3.0 else FONT)   # small (green / orange) legends: JetBrains Mono ExtraBold
     size = h / cap_height(fp)
     if s == "J" and fp is FONT:
         # Oswald's J has only a tiny hook: build a J from the U (right stem + bowl + a
@@ -131,7 +131,13 @@ def logo_geom(x, y, size):
 # positions are fractions of a 1u key (x right, y up), legends: (kind, text, color, fx, fy, height, align)
 TEXT_SCALE = 0.93     # overall legend size (text and arrows); 1.0 = original sizes
 MAIN, MOD, SUB, LAY = (v * TEXT_SCALE for v in (5.0, 4.0, 3.0, 2.8))
-TR = (0.36, 0.33)   # orange top-right (right aligned)
+TR = (0.36, 0.33)
+# gray / black key words: one start position, one baseline, one font
+XL = -0.38              # left start of words on 1u keys (1.9 mm in from the top edge)
+XL15 = -0.678           # same 1.9 mm inset on 1.5u keys (SHIFT / SPACE / ENTER)
+YW = -0.05              # vertical position of the main word on every gray / black key
+YS = -0.31              # small word under the main word (ESC / DEL)
+OSW = dict(font="main") # small words on gray keys in the same typeface as the main words   # orange top-right (right aligned)
 def alpha(ch, sub=None, side="l", lay=None, fn=None, fnside="l", homing=False):
     L = [("t", ch, "main", 0, 0.22 if side == "c" else 0.05, MAIN, "c")]
     if sub:
@@ -151,17 +157,17 @@ r0 = [("Q",None,"F1","l"),("W",None,"F2","l"),("E",None,"F3","l"),("R",None,"F4"
 for i,(ch,lay,fn,fs) in enumerate(r0):
     add(0, 0.75 + i, 1, "cream", alpha(ch, lay=lay, fn=fn, fnside=fs))
 # row 1
-add(1, 0, 1, "gray", dict(L=[("t","Z/H","orange",-0.38,0.28,LAY,"l"),("t","TAB","main",-0.06,-0.02,MOD,"c"),
-                             ("t","ESC","green",-0.38,-0.29,SUB,"l")], homing=False))
+add(1, 0, 1, "gray", dict(L=[("t","Z/H","orange",XL,0.28,LAY,"l",OSW),("t","TAB","main",XL,YW,MOD,"l"),
+                             ("t","ESC","green",XL,YS,LAY,"l",OSW)], homing=False))
 r1 = [("A","!1","l"),("S","\"2","l"),("D","#3","l"),("F","$4","l"),("G","%5","l"),
       ("H","&6","r"),("J","'7","r"),("K","(8","r"),("L",")9","r")]
 for i,(ch,s,sd) in enumerate(r1):
     add(1, 1 + i, 1, "cream", alpha(ch, sub=s, side=sd, homing=ch in "FJ"))
 add(1, 10, 1, "cream", dict(L=[("t","=","main",-0.06,0.18,MAIN*0.8,"c",(2.6,1.4)),("t","-","main",-0.06,-0.18,MAIN*0.8,"c",(3.2,1.6)),
                               ("t","_","orange",0.30,0.20,LAY,"c",(1.0,1.3)),("t","0","green",0.32,-0.29,SUB,"c")], homing=False))
-add(1, 11, 1, "gray", dict(L=[("t","BKSP","main",0.38,-0.02,MOD,"r"),("t","DEL","green",0.38,-0.29,SUB,"r")], homing=False))
+add(1, 11, 1, "gray", dict(L=[("t","BKSP","main",-XL,YW,MOD,"r"),("t","DEL","green",-XL,YS,LAY,"r",OSW)], homing=False))
 # row 2
-add(2, 0, 1.5, "gray", dict(L=[("t","SHIFT","main",-0.54,-0.08,MOD,"l")], homing=False))
+add(2, 0, 1.5, "gray", dict(L=[("t","SHIFT","main",XL15,YW,MOD,"l")], homing=False))
 r2 = [("Z","~^","l"),("X","|¥","l"),("C","{[","l"),("V","}]","l"),("B","+;","l"),("N","*:","r")]
 for i,(ch,s,sd) in enumerate(r2):
     add(2, 1.5 + i, 1, "cream", alpha(ch, sub=s, side=sd))
@@ -169,19 +175,19 @@ m = alpha("M", sub="?/", side="r", lay="MENU"); m["L"].append(("d", None, "green
 add(2, 7.5, 1, "cream", m)
 add(2, 8.5, 1, "cream", dict(L=[("t","<","main",-0.06,0.18,MAIN*0.75,"c",(1.8,1.8)),("t",",","main",-0.06,-0.18,MAIN*0.75,"c",(1.8,1.8)),
                                ("t",">","green",0.32,0.03,SUB,"c",(1.3,1.3)),("t",".","green",0.32,-0.27,SUB,"c",(1.4,1.4))], homing=False))
-add(2, 10, 1, "gray", dict(L=[("t","PGUP","orange",TR[0],TR[1],LAY,"r"),("a","up","main",0,-0.02,None,None)], homing=False))
+add(2, 10, 1, "gray", dict(L=[("t","PGUP","orange",-XL,TR[1],LAY,"r",OSW),("a","up","main",0,-0.02,None,None)], homing=False))
 add(2, 11, 1, "black", dict(L=[("t","`","white",0,0.25,MAIN*0.85,"c",(1.6,1.6)),("t","@","white",0,-0.12,MAIN*1.0,"c"),
                               ("d",None,"orange",0.30,0.28,3.6,None)], homing=False))
 # row 3
-add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",-0.38,0.28,LAY,"l"),("t","CTRL","main",-0.38,-0.04,MOD,"l")], homing=False))
+add(3, 0, 1, "gray", dict(L=[("t","CAPS","orange",XL,0.28,LAY,"l",OSW),("t","CTRL","main",XL,YW,MOD,"l")], homing=False))
 add(3, 1.25, 1, "gray", dict(L=[("l",None,"main",0,0,8.0,None)], homing=False))
-add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",-0.09,-0.08,MOD,"c")], homing=False))
-add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,0.02,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
-add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",-0.54,-0.08,MOD,"l")], homing=False))
-add(3, 6.0, 1.5, "gray", dict(L=[("t","ENTER","main",0.54,-0.08,MOD,"r")], homing=False))
-add(3, 7.5, 1, "black", dict(L=[("t","JIS","white",0.04,0.02,MOD,"c"),("d",None,"green",0.32,-0.30,3.6,None)], homing=False))
+add(3, 2.25, 1, "gray", dict(L=[("t","ALT","main",XL,YW,MOD,"l")], homing=False))
+add(3, 3.5, 1, "black", dict(L=[("t","ASC","white",-0.04,YW,MOD,"c"),("d",None,"green",-0.32,-0.30,3.6,None)], homing=False))
+add(3, 4.5, 1.5, "gray", dict(L=[("t","SPACE","main",XL15,YW,MOD,"l")], homing=False))
+add(3, 6.0, 1.5, "gray", dict(L=[("t","ENTER","main",-XL15,YW,MOD,"r")], homing=False))
+add(3, 7.5, 1, "black", dict(L=[("t","JIS","white",0.04,YW,MOD,"c"),("d",None,"green",0.32,-0.30,3.6,None)], homing=False))
 for i,(lab,d) in enumerate([("HOME","left"),("PGDN","down"),("END","right")]):
-    add(3, 9 + i, 1, "gray", dict(L=[("t",lab,"orange",TR[0],TR[1],LAY,"r"),("a",d,"main",0,-0.02,None,None)], homing=False))
+    add(3, 9 + i, 1, "gray", dict(L=[("t",lab,"orange",-XL,TR[1],LAY,"r",OSW),("a",d,"main",0,-0.02,None,None)], homing=False))
 
 # ---------------- geometry ----------------
 def rrect(w, d, r):
@@ -200,10 +206,12 @@ def legend_layers(key, W1, D1):
     out = {}
     for item in key["L"]:
         kind, txt, col, fx, fy, h, al = item[:7]
-        st = item[7] if len(item) > 7 else None      # optional (sx, sy) stretch for small symbols
+        opt = item[7] if len(item) > 7 else None     # optional (sx, sy) stretch, or dict(stretch=, font="main")
+        st = opt.get("stretch") if isinstance(opt, dict) else opt
+        font = FONT if isinstance(opt, dict) and opt.get("font") == "main" else None
         x, y = fx * W1, fy * D1
         if kind == "t":
-            g = text_geom(txt, h, x, y, al)
+            g = text_geom(txt, h, x, y, al, font)
             if st:
                 c = g.centroid
                 g = affinity.scale(g, st[0], st[1], origin=(c.x, c.y))
